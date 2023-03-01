@@ -5,20 +5,17 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/fiatjaf/go-lnurl"
 	"github.com/fiatjaf/makeinvoice"
-	"github.com/tidwall/sjson"
 )
 
-func makeMetadata(params *Params) string {
-	metadata, _ := sjson.Set("[]", "0.0", "text/identifier")
-	metadata, _ = sjson.Set(metadata, "0.1", params.Name+"@"+params.Domain)
+func metaData(params *Params) lnurl.Metadata {
 
-	metadata, _ = sjson.Set(metadata, "1.0", "text/plain")
-	metadata, _ = sjson.Set(metadata, "1.1", "Satoshis to "+params.Name+"@"+params.Domain+".")
-
-	// TODO support image, custom description
-
-	return metadata
+	//addImageToMetaData(w.telegram, &metadata, username, user.Telegram)
+	return lnurl.Metadata{
+		Description:      fmt.Sprintf("Pay to %s@%s", params.Name, params.Domain),
+		LightningAddress: fmt.Sprintf("%s@%s", params.Name, params.Domain),
+	}
 }
 
 func makeInvoice(
@@ -70,11 +67,16 @@ func makeInvoice(
 	}
 
 	if pin != nil {
-		// use this as the description
+		// use this as the description for new accounts
 		mip.Description = fmt.Sprintf("%s's PIN for '%s@%s' lightning address: %s", params.Domain, params.Name, params.Domain, *pin)
 	} else {
-		// make the lnurlpay description_hash
-		mip.Description = makeMetadata(params)
+		//use zapEventSerializedStr if nip57
+		if params.zapEventSerializedStr != "" {
+			mip.Description = params.zapEventSerializedStr
+		} else {
+			// make the lnurlpay description_hash
+			mip.Description = metaData(params).Encode()
+		}
 		mip.UseDescriptionHash = true
 	}
 
@@ -83,7 +85,7 @@ func makeInvoice(
 
 	log.Debug().Int("msatoshi", msat).
 		Interface("backend", backend).
-		Str("bolt11", bolt11).Err(err).
+		Str("bolt11", bolt11).Err(err).Str("Description", mip.Description).
 		Msg("invoice generation")
 
 	return bolt11, err

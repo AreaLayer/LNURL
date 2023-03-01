@@ -2,7 +2,7 @@
 
 # Satdress
 
-Federated Lightning Address Server
+Federated Lightning Address Server (with (partly) NIP57 Zap support)
 
 ## How to run
 
@@ -16,10 +16,12 @@ SECRET=askdbasjdhvakjvsdjasd
 SITE_OWNER_URL=https://t.me/qecez
 SITE_OWNER_NAME=@qecez
 SITE_NAME=Bitmia
+NOSTR_PRIVATE_KEY=nsec213....
 ```
 
 3. Start the app with `./satdress`
-4. Serve the app to the world on your domain using whatever technique you're used to
+4. If you don't know how to set env you can put the above parameters in your commandline before `./satdress` 
+5. Serve the app to the world on your domain using whatever technique you're used to
 
 ## Multiple domains
 
@@ -35,3 +37,14 @@ this option, existing users won't work anymore (which is by design).
 ## Get help
 
 Maybe ask for help on https://t.me/lnurl if you're in trouble.
+
+
+## Status of the Fork:
+NIP57 for Nostr (ZAPS) works when using an LNBits backend, other backends still need verification of payments in order to sign the zap on Nostr. (Help appriciated)
+
+Code needs some refactoring
+
+Needs proper testing.
+
+Inspired by LightningTipBot code from @calle
+https://github.com/LightningTipBot/LightningTipBot
