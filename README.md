@@ -44,7 +44,7 @@ NIP57 for Nostr (ZAPS) works when using an LNBits backend, other backends still 
 
 Code needs some refactoring
 
-Needs proper testing.
+Needs proper testing (Multi-User and other backends)
 
 Inspired by LightningTipBot code from @calle
 https://github.com/LightningTipBot/LightningTipBot
