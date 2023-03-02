@@ -40,7 +40,7 @@ Maybe ask for help on https://t.me/lnurl if you're in trouble.
 
 
 ## Status of the Fork:
-NIP57 for Nostr (ZAPS) works when using an LNBits backend, other backends still need verification of payments in order to sign the zap on Nostr. (Help appriciated)
+NIP57 for Nostr (ZAPS) works when using an LNBits or LND backend, other backends still need verification of payments in order to sign the zap on Nostr. (Help appriciated)
 
 Code needs some refactoring
 
