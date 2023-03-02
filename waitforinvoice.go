@@ -242,11 +242,6 @@ func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params) {
 					//TODO
 
 				}
-				//Timeout waiting for payment after maxiterations
-				if maxiterations == 0 {
-					log.Debug().Str("NIP57", bolt11.PaymentHash).Msg("Timed out")
-					close(quit)
-				}
 
 				//If invoice is paid and DescriptionHash matches Nip57 DescriptionHash, publish Zap Nostr Event. This is rather a sanity check.
 				if isPaid {
@@ -257,9 +252,16 @@ func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params) {
 						close(quit)
 						return
 					}
-
-					maxiterations--
 				}
+
+				//Timeout waiting for payment after maxiterations
+				if maxiterations == 0 {
+					log.Debug().Str("NIP57", bolt11.PaymentHash).Msg("Timed out")
+					close(quit)
+					return
+				}
+				maxiterations--
+
 			case <-quit:
 				ticker.Stop()
 				return
