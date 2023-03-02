@@ -22,7 +22,7 @@ import (
 var (
 	TorProxyURL = "socks5://127.0.0.1:9050"
 	Client      = &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 25 * time.Second,
 	}
 )
 
@@ -173,7 +173,7 @@ func WaitForInvoicePaid(payvalues *lnurl.LNURLPayValues, params *Params) {
 		}
 
 		Client.Transport = specialTransport
-		var maxiterations = 60
+		var maxiterations = 100
 		ticker := time.NewTicker(1 * time.Second)
 		quit := make(chan struct{})
 
@@ -223,6 +223,7 @@ func WaitForInvoicePaid(payvalues *lnurl.LNURLPayValues, params *Params) {
 						log.Debug().Str("ZAP", "Published on Nostr").Msg("zapped")
 						publishNostrEvent(nip57Receipt, nip57ReceiptRelays)
 						close(quit)
+						return
 					}
 
 				case LNBitsParams:
@@ -244,6 +245,7 @@ func WaitForInvoicePaid(payvalues *lnurl.LNURLPayValues, params *Params) {
 						log.Debug().Str("ZAP", "Published on Nostr").Msg("zapped")
 						publishNostrEvent(nip57Receipt, nip57ReceiptRelays)
 						close(quit)
+						return
 					}
 
 				case LNPayParams:
