@@ -14,7 +14,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fiatjaf/go-lnurl"
 	decodepay "github.com/nbd-wtf/ln-decodepay"
 	"github.com/tidwall/gjson"
 )
@@ -45,7 +44,7 @@ type CommandoParams struct {
 }
 
 func (l CommandoParams) getCert() string { return "" }
-func (l CommandoParams) isTor() bool     { return strings.Index(l.Host, ".onion") != -1 }
+func (l CommandoParams) isTor() bool     { return strings.Contains(l.Host, ".onion") }
 
 type SparkoParams struct {
 	Cert string
@@ -54,7 +53,7 @@ type SparkoParams struct {
 }
 
 func (l SparkoParams) getCert() string { return l.Cert }
-func (l SparkoParams) isTor() bool     { return strings.Index(l.Host, ".onion") != -1 }
+func (l SparkoParams) isTor() bool     { return strings.Contains(l.Host, ".onion") }
 
 type LNDParams struct {
 	Cert     string
@@ -63,7 +62,7 @@ type LNDParams struct {
 }
 
 func (l LNDParams) getCert() string { return l.Cert }
-func (l LNDParams) isTor() bool     { return strings.Index(l.Host, ".onion") != -1 }
+func (l LNDParams) isTor() bool     { return strings.Contains(l.Host, ".onion") }
 
 type LNBitsParams struct {
 	Cert string
@@ -72,7 +71,7 @@ type LNBitsParams struct {
 }
 
 func (l LNBitsParams) getCert() string { return l.Cert }
-func (l LNBitsParams) isTor() bool     { return strings.Index(l.Host, ".onion") != -1 }
+func (l LNBitsParams) isTor() bool     { return strings.Contains(l.Host, ".onion") }
 
 type LNPayParams struct {
 	PublicAccessKey  string
@@ -89,7 +88,7 @@ type EclairParams struct {
 }
 
 func (l EclairParams) getCert() string { return l.Cert }
-func (l EclairParams) isTor() bool     { return strings.Index(l.Host, ".onion") != -1 }
+func (l EclairParams) isTor() bool     { return strings.Contains(l.Host, ".onion") }
 
 type StrikeParams struct {
 	Key      string
@@ -105,7 +104,7 @@ type BackendParams interface {
 	isTor() bool
 }
 
-func WaitForInvoicePaid(payvalues *lnurl.LNURLPayValues, params *Params) {
+func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params) {
 	//Check for a minute if invoice is paid
 	//Do we have an easier way to do  this? How does it work for other backends than lnbits.
 	go func() {
@@ -182,9 +181,11 @@ func WaitForInvoicePaid(payvalues *lnurl.LNURLPayValues, params *Params) {
 			case <-ticker.C:
 
 				bolt11, _ := decodepay.Decodepay(payvalues.PR)
+				var isPaid bool = false
 
 				switch backend := mip.Backend.(type) {
 				case SparkoParams:
+					//TODO
 				case LNDParams:
 					req, err := http.NewRequest("GET",
 						backend.Host+"/v1/invoice/"+bolt11.PaymentHash,
@@ -196,7 +197,6 @@ func WaitForInvoicePaid(payvalues *lnurl.LNURLPayValues, params *Params) {
 					if b, err := base64.StdEncoding.DecodeString(backend.Macaroon); err == nil {
 						backend.Macaroon = hex.EncodeToString(b)
 					}
-
 					req.Header.Set("Grpc-Metadata-macaroon", backend.Macaroon)
 					resp, err := Client.Do(req)
 					if err != nil {
@@ -204,14 +204,6 @@ func WaitForInvoicePaid(payvalues *lnurl.LNURLPayValues, params *Params) {
 						return
 					}
 					defer resp.Body.Close()
-					if resp.StatusCode >= 300 {
-						body, _ := ioutil.ReadAll(resp.Body)
-						text := string(body)
-						if len(text) > 300 {
-							text = text[:300]
-						}
-						return
-					}
 
 					b, err := ioutil.ReadAll(resp.Body)
 					if err != nil {
@@ -219,11 +211,8 @@ func WaitForInvoicePaid(payvalues *lnurl.LNURLPayValues, params *Params) {
 						return
 					}
 
-					if gjson.ParseBytes(b).Get("settled").String() == "true" && bolt11.DescriptionHash == Nip57DescriptionHash(zapEventSerializedStr) {
-						log.Debug().Str("ZAP", "Published on Nostr").Msg("zapped")
-						publishNostrEvent(nip57Receipt, nip57ReceiptRelays)
-						close(quit)
-						return
+					if gjson.ParseBytes(b).Get("settled").String() == "true" {
+						isPaid = true
 					}
 
 				case LNBitsParams:
@@ -240,25 +229,37 @@ func WaitForInvoicePaid(payvalues *lnurl.LNURLPayValues, params *Params) {
 					}
 					var jsonMap map[string]interface{}
 					json.Unmarshal([]byte(string(responseData)), &jsonMap)
-					//If invoice is paid and DescriptionHash matches Nip57 DescriptionHash, publish Zap Nostr Event
-					if jsonMap["paid"].(bool) && bolt11.DescriptionHash == Nip57DescriptionHash(zapEventSerializedStr) {
+
+					if jsonMap["paid"].(bool) {
+						isPaid = true
+					}
+
+				case LNPayParams:
+					//TODO
+				case EclairParams:
+					//TODO
+				case CommandoParams:
+					//TODO
+
+				}
+				//Timeout waiting for payment after maxiterations
+				if maxiterations == 0 {
+					log.Debug().Str("NIP57", bolt11.PaymentHash).Msg("Timed out")
+					close(quit)
+				}
+
+				//If invoice is paid and DescriptionHash matches Nip57 DescriptionHash, publish Zap Nostr Event. This is rather a sanity check.
+				if isPaid {
+					var descriptionTag = *payvalues.nip57Receipt.Tags.GetFirst([]string{"description"})
+					if bolt11.DescriptionHash == Nip57DescriptionHash(descriptionTag.Value()) {
 						log.Debug().Str("ZAP", "Published on Nostr").Msg("zapped")
-						publishNostrEvent(nip57Receipt, nip57ReceiptRelays)
+						publishNostrEvent(payvalues.nip57Receipt, payvalues.nip57ReceiptRelays)
 						close(quit)
 						return
 					}
 
-				case LNPayParams:
-				case EclairParams:
-				case CommandoParams:
-
+					maxiterations--
 				}
-
-				if maxiterations == 0 {
-					log.Debug().Str("ZAP", bolt11.PaymentHash).Msg("Timed out")
-					close(quit)
-				}
-				maxiterations--
 			case <-quit:
 				ticker.Stop()
 				return

@@ -11,6 +11,7 @@ import (
 	"github.com/fiatjaf/go-lnurl"
 	"github.com/gorilla/mux"
 	"github.com/nbd-wtf/go-nostr"
+	decodepay "github.com/nbd-wtf/ln-decodepay"
 )
 
 var allowNostr bool = false
@@ -32,6 +33,19 @@ type LNURLPayParamsCustom struct {
 	AllowsNostr     bool                 `json:"allowsNostr,omitempty"`
 	NostrPubKey     string               `json:"nostrPubkey,omitempty"`
 	Metadata        lnurl.Metadata       `json:"-"`
+}
+
+type LNURLPayValuesCustom struct {
+	lnurl.LNURLResponse
+	SuccessAction *lnurl.SuccessAction `json:"successAction"`
+	Routes        interface{}          `json:"routes"` // ignored
+	PR            string               `json:"pr"`
+	Disposable    *bool                `json:"disposable,omitempty"`
+
+	ParsedInvoice      decodepay.Bolt11 `json:"-"`
+	PayerDataJSON      string           `json:"-"`
+	nip57Receipt       nostr.Event      `json:"nip57Receipt"`
+	nip57ReceiptRelays []string         `json:"nip57ReceiptRelays"`
 }
 
 func handleLNURL(w http.ResponseWriter, r *http.Request) {
@@ -160,7 +174,8 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 
 		//we outsource the second part in a function, we should do this for the first one too.
 		response, err = serveLNURLpSecond(w, params, username, msat, comment, payerData, zapEvent)
-		var payvalues = response.(*lnurl.LNURLPayValues)
+		var payvaluescustom = response.(LNURLPayValuesCustom)
+		//var payvalues = response.(*lnurl.LNURLPayValues)
 		if err != nil {
 			if response != nil {
 				// there is a valid error response
@@ -168,29 +183,36 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-		err = json.NewEncoder(w).Encode(response)
+
+		json.NewEncoder(w).Encode(lnurl.LNURLPayValues{
+			LNURLResponse: payvaluescustom.LNURLResponse,
+			PR:            payvaluescustom.PR,
+			Routes:        payvaluescustom.Routes,
+			SuccessAction: payvaluescustom.SuccessAction,
+		})
+
+		//err = json.NewEncoder(w).Encode(payvalues)
 		if err != nil {
 			json.NewEncoder(w).Encode(response)
 			return
 		}
 
 		if allowNostr {
-			WaitForInvoicePaid(payvalues, params)
+			go WaitForInvoicePaid(payvaluescustom, params)
 		}
 	}
 }
 
-func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, amount_msat int, comment string, payerData lnurl.PayerDataValues, zapEvent nostr.Event) (*lnurl.LNURLPayValues, error) {
+func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, amount_msat int, comment string, payerData lnurl.PayerDataValues, zapEvent nostr.Event) (LNURLPayValuesCustom, error) {
 	log.Debug().Any("Serving invoice for user %s", username)
 	if amount_msat < minSendable || amount_msat > maxSendable {
 		// amount is not ok
-		return &lnurl.LNURLPayValues{
+		return LNURLPayValuesCustom{
 			LNURLResponse: lnurl.LNURLResponse{
 				Status: "Error",
 				Reason: fmt.Sprintf("Amount out of bounds (min: %d sat, max: %d sat).", minSendable/1000, maxSendable/1000)},
 		}, fmt.Errorf("amount out of bounds")
 	}
-	var resp *lnurl.LNURLPayValues
 
 	// NIP57 ZAPs
 	// for nip57 use the nostr event as the descriptionHash
@@ -202,7 +224,7 @@ func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, a
 		zapEventSerializedStr = fmt.Sprintf("%s", zapEventSerialized)
 		if err != nil {
 			//log.Println(err)
-			return &lnurl.LNURLPayValues{
+			return LNURLPayValuesCustom{
 				LNURLResponse: lnurl.LNURLResponse{
 					Status: "Error",
 					Reason: "Couldn't serialize zap event."},
@@ -228,15 +250,16 @@ func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, a
 		params.zapEventSerializedStr = ""
 	}
 
+	var response LNURLPayValuesCustom
 	invoice, err := makeInvoice(params, amount_msat, nil)
 	if err != nil {
 		err = fmt.Errorf("Couldn't create invoice: %v", err.Error())
-		resp = &lnurl.LNURLPayValues{
+		response = LNURLPayValuesCustom{
 			LNURLResponse: lnurl.LNURLResponse{
 				Status: "Error",
 				Reason: "Couldn't create invoice."},
 		}
-		return resp, err
+		return response, err
 	}
 	// nip57 - we need to store the newly created invoice in the zap receipt
 	if zapEvent.Sig != "" {
@@ -258,11 +281,13 @@ func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, a
 		nip57Receipt.Sign(pk)
 	}
 
-	return &lnurl.LNURLPayValues{
-		LNURLResponse: lnurl.LNURLResponse{Status: "OK"},
-		PR:            invoice,
-		Routes:        make([]struct{}, 0),
-		SuccessAction: &lnurl.SuccessAction{Message: "Payment Received!", Tag: "message"},
+	return LNURLPayValuesCustom{
+		LNURLResponse:      lnurl.LNURLResponse{Status: "OK"},
+		PR:                 invoice,
+		Routes:             make([]struct{}, 0),
+		SuccessAction:      &lnurl.SuccessAction{Message: "Payment Received!", Tag: "message"},
+		nip57Receipt:       nip57Receipt,
+		nip57ReceiptRelays: nip57ReceiptRelays,
 	}, nil
 
 }
