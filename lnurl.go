@@ -109,6 +109,7 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 			nostrPubkey = pub
 		}
 
+		//serveLNURLpFirst
 		json.NewEncoder(w).Encode(LNURLPayParamsCustom{
 			LNURLResponse:   lnurl.LNURLResponse{Status: "OK"},
 			Callback:        fmt.Sprintf("https://%s/.well-known/lnurlp/%s", domain, username),
@@ -244,14 +245,14 @@ func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, a
 			}
 		}
 		// calculate description hash from the serialized nostr event in makeinvoice.go
-		params.zapEventSerializedStr = zapEventSerializedStr
+		zapEventSerializedStr = zapEventSerializedStr
 	} else {
 
-		params.zapEventSerializedStr = ""
+		zapEventSerializedStr = ""
 	}
 
 	var response LNURLPayValuesCustom
-	invoice, err := makeInvoice(params, amount_msat, nil)
+	invoice, err := makeInvoice(params, amount_msat, nil, zapEventSerializedStr)
 	if err != nil {
 		err = fmt.Errorf("Couldn't create invoice: %v", err.Error())
 		response = LNURLPayValuesCustom{

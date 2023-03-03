@@ -22,6 +22,7 @@ func makeInvoice(
 	params *Params,
 	msat int,
 	pin *string,
+	zapEventSerializedStr string,
 ) (bolt11 string, err error) {
 	// prepare params
 	var backend makeinvoice.BackendParams
@@ -70,9 +71,9 @@ func makeInvoice(
 		// use this as the description for new accounts
 		mip.Description = fmt.Sprintf("%s's PIN for '%s@%s' lightning address: %s", params.Domain, params.Name, params.Domain, *pin)
 	} else {
-		//use zapEventSerializedStr if nip57
-		if params.zapEventSerializedStr != "" {
-			mip.Description = params.zapEventSerializedStr
+		//use zapEventSerializedStr if nip57, else build hash descriptionhash from params
+		if zapEventSerializedStr != "" {
+			mip.Description = zapEventSerializedStr
 		} else {
 			// make the lnurlpay description_hash
 			mip.Description = metaData(params).Encode()

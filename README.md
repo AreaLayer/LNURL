@@ -6,7 +6,7 @@ Federated Lightning Address Server (with NIP57 Zap support)
 
 ## How to run
 
-1. Download the binary from the releases page (or compile with `go build`)
+1. Download the binary from the releases page (or compile with `go build` or if you want to compile for another system ,like a linux webserver:   `env GOOS=linux GOARCH=amd64 go build`   )
 2. Set the following environment variables somehow (using example values from bitmia.com):
 
 > The Nostr private key in the parameters should be in bench32 format (`nsec..`) and it should be a new one. It is needed to sign messages only, so does not need to be your main account key.
@@ -42,7 +42,7 @@ Maybe ask for help on https://t.me/lnurl if you're in trouble.
 
 
 ## Status of the Fork:
-- NIP57 for Nostr (ZAPS) works when using an LNBits or LND backend, other backends (sparko, lnpay, eclair, commando) still need verification of payments in waitforinvoice.go by API calls in order to sign the zap on Nostr. (Help appreciated, because I can't test them)
+- NIP57 for Nostr ("Zaps") work when using an LNBits or LND backend, other backends (sparko, lnpay, eclair, commando) still need verification of payments in waitforinvoice.go by API calls in order to sign the zap on Nostr. (Help appreciated, because I can't test them)
 - Code needs some refactoring
 - Needs proper testing (especially in multi-user environment)
 - Credit for the inspiration by LightningTipBot code from @calle
