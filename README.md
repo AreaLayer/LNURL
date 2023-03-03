@@ -9,6 +9,8 @@ Federated Lightning Address Server (with (partly) NIP57 Zap support)
 1. Download the binary from the releases page (or compile with `go build` or `go get`)
 2. Set the following environment variables somehow (using example values from bitmia.com):
 
+> The `nsec` in this file should be a new one. It is needed to sign messages only, so does not need to be your main account key.
+
 ```
 PORT=17422
 DOMAIN=bitmia.com
