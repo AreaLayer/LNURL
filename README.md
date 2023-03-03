@@ -43,6 +43,7 @@ Maybe ask for help on https://t.me/lnurl if you're in trouble.
 
 ## Status of the Fork:
 - NIP57 for Nostr ("Zaps") work when using an LNBits or LND backend, other backends (sparko, lnpay, eclair, commando) still need verification of payments in waitforinvoice.go by API calls in order to sign the zap on Nostr. (Help appreciated, because I can't test them)
+- Added an alternative API '/api/easy' that deletes users and creates new name and pin for them
 - Code needs some refactoring
 - Needs proper testing (especially in multi-user environment)
 - Credit for the inspiration by LightningTipBot code from @calle
