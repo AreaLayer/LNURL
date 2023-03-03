@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -114,7 +115,7 @@ func main() {
 				Waki:   r.FormValue("waki"),
 				NodeId: r.FormValue("nodeid"),
 				Rune:   r.FormValue("rune"),
-			}, r.FormValue("pin"))
+			}, r.FormValue("pin"), false, "")
 			if err != nil {
 				w.WriteHeader(500)
 				fmt.Fprint(w, err.Error())
@@ -127,6 +128,57 @@ func main() {
 				Name         string `json:"name"`
 				ActualDomain string `json:"actual_domain"`
 			}{pin, inv, name, domain})
+		},
+	)
+
+	//Alternative API function that brutally deletes previous user and gives them a new name and pin.
+	//Also works when user didn't exist before.
+
+	//Returns Status ok (bool) and pin needed to authorize next call. Save this and the name e.g. in a DB for the user.
+	//http Post the following content to yourdomain/api/easy
+	//Expected input with lnbits  example:
+	//			  { new StringContent(thecurrentnameyouwanttochange), "currentname" },
+	//			  { new StringContent(thenewname), "name" },
+	//            { new StringContent(https://yoursatdressdomain.com), "domain" },
+	//            { new StringContent("lnbits"), "kind" },
+	//            { new StringContent("https://lnbits.yourdomain.com"), "host" },
+	//            { new StringContent(lnbitsapikey), "key" },
+	//            { new StringContent(pin), "pin" },
+
+	router.Path("/api/easy/").HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+
+			newname := r.FormValue("name")
+			currentName := r.FormValue("currentname")
+			domain := r.FormValue("domain")
+			currentPin := r.FormValue("pin")
+
+			params := Params{
+				Kind:   r.FormValue("kind"),
+				Host:   r.FormValue("host"),
+				Key:    r.FormValue("key"),
+				Pak:    r.FormValue("pak"),
+				Waki:   r.FormValue("waki"),
+				NodeId: r.FormValue("nodeid"),
+				Rune:   r.FormValue("rune"),
+			}
+
+			pin, _, err := SaveName(newname, domain, &params, currentPin, true, currentName)
+			if err != nil {
+				w.WriteHeader(500)
+				fmt.Fprint(w, err.Error())
+				return
+			}
+			params.Pin = pin
+
+			response := ResponseEasy{
+				Ok:  true,
+				Pin: pin,
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			json.NewEncoder(w).Encode(response)
 		},
 	)
 

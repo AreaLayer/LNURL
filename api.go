@@ -16,6 +16,11 @@ type Response struct {
 	Data    interface{} `json:"data"`
 }
 
+type ResponseEasy struct {
+	Ok  bool   `json:"ok"`
+	Pin string `json:"pin"`
+}
+
 type SuccessClaim struct {
 	Name    string `json:"name"`
 	Domain  string `json:"domain"`
@@ -26,7 +31,7 @@ type SuccessClaim struct {
 // not authenticated, if correct pin is provided call returns the SuccessClaim
 func ClaimAddress(w http.ResponseWriter, r *http.Request) {
 	params := parseParams(r)
-	pin, inv, err := SaveName(params.Name, params.Domain, params, params.Pin)
+	pin, inv, err := SaveName(params.Name, params.Domain, params, params.Pin, false, "")
 	if err != nil {
 		sendError(w, 400, "could not register name: %s", err.Error())
 		return
@@ -78,7 +83,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 		params.Pin = r.Header.Get("X-Pin")
 	}
 
-	if _, _, err := SaveName(name, domain, params, params.Pin); err != nil {
+	if _, _, err := SaveName(name, domain, params, params.Pin, false, ""); err != nil {
 		sendError(w, 500, err.Error())
 		return
 	}

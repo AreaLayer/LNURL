@@ -34,6 +34,8 @@ func SaveName(
 	domain string,
 	params *Params,
 	providedPin string,
+	overwrite bool,
+	previousname string,
 ) (pin string, inv string, err error) {
 	name = strings.ToLower(name)
 	domain = strings.ToLower(domain)
@@ -50,6 +52,13 @@ func SaveName(
 	}
 	if err != nil {
 		return "", "", errors.New("that name does not exist")
+	}
+
+	if overwrite {
+		previouskey := []byte(getID(previousname, domain))
+		if err := db.Delete(previouskey, pebble.Sync); err != nil {
+			return "", "", fmt.Errorf("couldn't delete previous entry: %w", err)
+		}
 	}
 
 	params.Name = name
