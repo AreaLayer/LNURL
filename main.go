@@ -137,8 +137,8 @@ func main() {
 	//Returns Status ok (bool) and pin needed to authorize next call. Save this and the name e.g. in a DB for the user.
 	//http Post the following content to yourdomain/api/easy
 	//Expected input with lnbits  example:
-	//			  { new StringContent(thecurrentnameyouwanttochange), "currentname" },
-	//			  { new StringContent(thenewname), "name" },
+	//            { new StringContent(thecurrentnameyouwanttochange), "currentname" },
+	//            { new StringContent(thenewname), "name" },
 	//            { new StringContent(https://yoursatdressdomain.com), "domain" },
 	//            { new StringContent("lnbits"), "kind" },
 	//            { new StringContent("https://lnbits.yourdomain.com"), "host" },
