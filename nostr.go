@@ -82,6 +82,50 @@ func handleNip05(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func GetNostrProfileMetaData(npub string) (nostr.ProfileMetadata, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+
+	var metadata *nostr.ProfileMetadata
+	// connect to any relay
+	url := "wss://relay.damus.io"
+	relay, err := nostr.RelayConnect(ctx, url)
+	if err != nil {
+		panic(err)
+	}
+
+	// create filters
+	var filters nostr.Filters
+	if _, v, err := nip19.Decode(npub); err == nil {
+		t := make(map[string][]string)
+		t["p"] = []string{v.(string)}
+		filters = []nostr.Filter{{
+			Authors: []string{v.(string)},
+			Kinds:   []int{0},
+			// limit = 3, get the three most recent notes
+			Limit: 1,
+		}}
+	} else {
+		return *metadata, err
+
+	}
+	sub := relay.Subscribe(ctx, filters)
+	evs := make([]nostr.Event, 0)
+
+	go func() {
+		<-sub.EndOfStoredEvents
+		cancel()
+	}()
+
+	for ev := range sub.Events {
+
+		evs = append(evs, *ev)
+	}
+	metadata, err = nostr.ParseMetadata(evs[0])
+
+	return *metadata, err
+
+}
+
 func publishNostrEvent(ev nostr.Event, relays []string) {
 	pk := s.NostrPrivateKey
 	ev.Sign(pk)

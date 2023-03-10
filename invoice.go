@@ -1,12 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/jpeg"
+	"io/ioutil"
+	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/nbd-wtf/go-nostr"
+	"github.com/nfnt/resize"
 
 	"github.com/fiatjaf/go-lnurl"
 	// "github.com/fiatjaf/makeinvoice"
@@ -14,11 +20,52 @@ import (
 
 func metaData(params *Params) lnurl.Metadata {
 
-	//addImageToMetaData(w.telegram, &metadata, username, user.Telegram)
-	return lnurl.Metadata{
+	metadata := lnurl.Metadata{
 		Description:      fmt.Sprintf("Pay to %s@%s", params.Name, params.Domain),
 		LightningAddress: fmt.Sprintf("%s@%s", params.Name, params.Domain),
 	}
+
+	NostrProfile, _ := GetNostrProfileMetaData(params.Npub)
+
+	addImageToMetaData(&metadata, NostrProfile.Picture)
+	return metadata
+
+}
+
+// addImageMetaData add images an image to the LNURL metadata
+func addImageToMetaData(metadata *lnurl.Metadata, imageurl string) {
+
+	picture, _ := DownloadProfilePicture(imageurl)
+	// if err != nil {
+	// 	log.Debug().Str("Downloading profile picture", err.Error()).Msg("Error")
+	// 	return
+	// }
+	metadata.Image.Ext = "jpeg"
+	metadata.Image.DataURI = imageurl
+	metadata.Image.Bytes = picture
+}
+
+func DownloadProfilePicture(url string) ([]byte, error) {
+	res, err := http.Get(url)
+
+	if err != nil {
+		//log.Fatalf("http.Get -> %v", err)
+	}
+	data, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		// log.Fatalf("ioutil.ReadAll -> %v", err)
+	}
+	res.Body.Close()
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	// resize image
+	img = resize.Thumbnail(160, 160, img, resize.Lanczos3)
+	buf := new(bytes.Buffer)
+	_ = jpeg.Encode(buf, img, nil)
+	ioutil.WriteFile("test.jpg", buf.Bytes(), 0666)
+	return buf.Bytes(), nil
 }
 
 func makeInvoice(
@@ -29,6 +76,7 @@ func makeInvoice(
 	comment string,
 ) (bolt11 string, err error) {
 	// prepare params
+
 	var backend BackendParams
 	switch params.Kind {
 	case "sparko":
