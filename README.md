@@ -19,6 +19,8 @@ SITE_OWNER_URL=https://t.me/qecez
 SITE_OWNER_NAME=@qecez
 SITE_NAME=Bitmia
 NOSTR_PRIVATE_KEY=nsec213....
+FORWARD_URL=https://thepageyouwanttoshowasmainpage.com
+NIP05=true
 ```
 
 3. Start the app with `./satdress`
@@ -43,6 +45,9 @@ Maybe ask for help on https://t.me/lnurl if you're in trouble.
 
 ## Status of the Fork:
 - NIP57 for Nostr ("Zaps") work when using an LNBits or LND backend, other backends (sparko, lnpay, eclair, commando) still need verification of payments in waitforinvoice.go by API calls in order to sign the zap on Nostr. (Help appreciated, because I can't test them)
+- NIP05 support: If user added a npub, they can use lnaddress for Nostr NIP05 verificaton
+- Comments from Damus testflight are forwarded to lnbits (needs some rework)
+- Added possibility to add a forward main page, go to /lnaddress to add new users
 - Added an alternative API '/api/easy' that deletes users and creates new name and pin for them
 - Code needs some refactoring
 - Needs proper testing (especially in multi-user environment)

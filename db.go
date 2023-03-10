@@ -27,6 +27,7 @@ type Params struct {
 	Pin         string `json:"pin"`
 	MinSendable string `json:"minSendable"`
 	MaxSendable string `json:"maxSendable"`
+	Npub        string `json:"npub"`
 }
 
 func SaveName(
@@ -65,7 +66,7 @@ func SaveName(
 	params.Domain = domain
 
 	// check if the given data works
-	if inv, err = makeInvoice(params, 1000, &pin, ""); err != nil {
+	if inv, err = makeInvoice(params, 1000, &pin, "", ""); err != nil {
 		return "", "", fmt.Errorf("couldn't make an invoice with the given data: %w", err)
 	}
 
@@ -79,6 +80,7 @@ func SaveName(
 }
 
 func GetName(name, domain string) (*Params, error) {
+
 	val, closer, err := db.Get([]byte(getID(name, domain)))
 	if err != nil {
 		return nil, err
@@ -93,6 +95,32 @@ func GetName(name, domain string) (*Params, error) {
 	params.Name = name
 	params.Domain = domain
 	return &params, nil
+}
+
+func GetAllUsers(domain string) ([]Params, error) {
+
+	var k []byte
+	var paramslist []Params
+
+	iter := db.NewIter(nil)
+	for iter.SeekGE(k); iter.Valid(); iter.Next() {
+		val, closer, err := db.Get([]byte(iter.Key()))
+		if err != nil {
+			return nil, err
+		}
+		defer closer.Close()
+
+		var params Params
+		if err := json.Unmarshal(val, &params); err != nil {
+			return nil, err
+		}
+		params.Domain = domain
+		paramslist = append(paramslist, params)
+
+	}
+	iter.Close()
+	return paramslist, nil
+
 }
 
 func DeleteName(name, domain string) error {

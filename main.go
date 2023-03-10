@@ -24,14 +24,16 @@ type Settings struct {
 	Domain string `envconfig:"DOMAIN" required:"true"`
 	// GlobalUsers means that user@ part is globally unique across all domains
 	// WARNING: if you toggle this existing users won't work anymore for safety reasons!
-	GlobalUsers     bool   `envconfig:"GLOBAL_USERS" required:"false" default:false`
-	Secret          string `envconfig:"SECRET" required:"true"`
-	SiteOwnerName   string `envconfig:"SITE_OWNER_NAME" required:"true"`
-	SiteOwnerURL    string `envconfig:"SITE_OWNER_URL" required:"true"`
-	SiteName        string `envconfig:"SITE_NAME" required:"true"`
-	NostrPrivateKey string `envconfig:"NOSTR_PRIVATE_KEY" required:"false" default:""`
-	ForceMigrate    bool   `envconfig:"FORCE_MIGRATE" required:"false" default:false`
-	TorProxyURL     string `envconfig:"TOR_PROXY_URL"`
+	GlobalUsers        bool   `envconfig:"GLOBAL_USERS" required:"false" default:false`
+	Secret             string `envconfig:"SECRET" required:"true"`
+	SiteOwnerName      string `envconfig:"SITE_OWNER_NAME" required:"true"`
+	SiteOwnerURL       string `envconfig:"SITE_OWNER_URL" required:"true"`
+	SiteName           string `envconfig:"SITE_NAME" required:"true"`
+	NostrPrivateKey    string `envconfig:"NOSTR_PRIVATE_KEY" required:"false" default:""`
+	ForwardMainPageUrl string `envconfig:"FORWARD_URL"`
+	Nip05              bool   `envconfig:"NIP05" required:"false" default:false`
+	ForceMigrate       bool   `envconfig:"FORCE_MIGRATE" required:"false" default:false`
+	TorProxyURL        string `envconfig:"TOR_PROXY_URL"`
 }
 
 var (
@@ -80,9 +82,23 @@ func main() {
 	router.Path("/.well-known/lnurlp/{user}").Methods("GET").
 		HandlerFunc(handleLNURL)
 
-	router.Path("/").HandlerFunc(
+	router.Path("/.well-known/nostr.json").Methods("GET").
+		HandlerFunc(handleNip05)
+
+	router.Path("/lnaddress").HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			renderHTML(w, indexHTML, map[string]interface{}{})
+		},
+	)
+
+	router.Path("/").HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if s.ForwardMainPageUrl != "" {
+				http.Redirect(w, r, s.ForwardMainPageUrl, http.StatusSeeOther)
+			} else {
+				http.Redirect(w, r, "/lnaddress", http.StatusSeeOther)
+			}
+
 		},
 	)
 
@@ -115,6 +131,7 @@ func main() {
 				Waki:   r.FormValue("waki"),
 				NodeId: r.FormValue("nodeid"),
 				Rune:   r.FormValue("rune"),
+				Npub:   r.FormValue("npub"),
 			}, r.FormValue("pin"), false, "")
 			if err != nil {
 				w.WriteHeader(500)
@@ -161,6 +178,7 @@ func main() {
 				Waki:   r.FormValue("waki"),
 				NodeId: r.FormValue("nodeid"),
 				Rune:   r.FormValue("rune"),
+				Npub:   r.FormValue("npub"),
 			}
 
 			pin, _, err := SaveName(newname, domain, &params, currentPin, true, currentName)

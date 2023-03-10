@@ -50,12 +50,13 @@
             <label for="kind"> Node Backend Type </label>
             <select name="kind" id="kind" id="kind" v-model="kind">
               <option disabled value="">Please select one:</option>
+              <option value="lnbits">LNbits</option>
               <option value="lnd">LND</option>
               <option value="commando">Commando (CLN)</option>
+              <option value="sparko">Sparko (CLN)</option>
               <option value="eclair">Eclair</option>
               <option value="lnpay">LNPay</option>
-              <option value="lnbits">LNbits</option>
-              <option value="sparko">Sparko (CLN)</option>
+
             </select>
           </div>
           <div v-if="kind == 'lnd'">
@@ -162,9 +163,21 @@
             <label for="pin"> Secret PIN </label>
             <input class="input full-width" name="pin" id="pin" />
           </div>
+          <div class="field">
+            <label for="npub">
+             Nostr npub (optional for NIP05)
+            </label>
+            <input
+              class="input full-width"
+              name="npub"
+              id="npub"
+              placeholder="npub123..."
+            />
+          </div>
           <button class="submit">Submit</button>
         </form>
       </div>
+     
       <div class="resources">
         <a
           class="resource-button"
