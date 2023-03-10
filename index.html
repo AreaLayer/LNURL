@@ -56,9 +56,26 @@
               <option value="sparko">Sparko (CLN)</option>
               <option value="eclair">Eclair</option>
               <option value="lnpay">LNPay</option>
+              <option value="forward">Forward</option>
 
             </select>
           </div>
+
+          <div v-if="kind == 'forward'">
+            <div class="field">
+              <label for="host">
+               Forward URl
+              </label>
+              <input
+                class="input full-width"
+                name="host"
+                id="host"
+                placeholder="https://walletofsatoshi.com/.well-known/lnurlp/ninthtractor31"
+              />
+            </div>
+           
+          </div>
+
           <div v-if="kind == 'lnd'">
             <div class="field">
               <label for="host">

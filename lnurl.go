@@ -89,6 +89,11 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if params.Kind == "forward" {
+		http.Redirect(w, r, params.Host, http.StatusSeeOther)
+		return
+	}
+
 	log.Info().Str("username", username).Str("domain", domain).Msg("got lnurl request")
 
 	if amount := r.URL.Query().Get("amount"); amount == "" {

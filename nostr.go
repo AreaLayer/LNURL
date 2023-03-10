@@ -64,9 +64,12 @@ func handleNip05(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if s.Nip05 {
-		middlestringtrim := middlestring[:len(middlestring)-2]
-		middlestringtrim += "\n"
-		response = firstpartstring + middlestringtrim + finalpartstring
+		if len(middlestring) > 2 {
+			middlestringtrim := middlestring[:len(middlestring)-2]
+
+			middlestringtrim += "\n"
+			response = firstpartstring + middlestringtrim + finalpartstring
+		}
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		fmt.Fprintf(w, response)

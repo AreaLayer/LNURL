@@ -23,12 +23,15 @@
         <button class="copy-button" @click="copyToClipboard">
           {{ copied ? 'Copied!' : 'Copy Secret PIN' }}
         </button>
+        <div v-if="invoice != ''">
         <div class="bold-small">
           To ensure the connection with your Lightning backend is configured
           properly, we've created a test invoice that can be seen below.
         </div>
+        
         <canvas id="qr"></canvas>
         <div class="code">{{ invoice }}</div>
+      </div>
       </div>
       <div class="resources">
         <a class="resource-button" target="_blank" href="https://t.me/lnurl">
