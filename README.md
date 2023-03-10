@@ -53,3 +53,5 @@ Maybe ask for help on https://t.me/lnurl if you're in trouble.
 - Needs proper testing (especially in multi-user environment)
 - Credit for the inspiration by LightningTipBot code from @calle
 https://github.com/LightningTipBot/LightningTipBot
+
+Download latest Release https://github.com/believethehype/satdress/releases/latest
