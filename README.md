@@ -23,7 +23,7 @@ FORWARD_URL=https://thepageyouwanttoshowasmainpage.com
 NIP05=true
 ```
 
-3. Start the app with `./satdress`
+3. Start the app with `./satdress` or `nohup ./satdress &` for a background task
 4. If you don't know how to set env you can put the above parameters in your commandline before `./satdress` 
 5. Serve the app to the world on your domain using whatever technique you're used to
 
@@ -46,6 +46,7 @@ Maybe ask for help on https://t.me/lnurl if you're in trouble.
 ## Status of the Fork:
 - NIP57 for Nostr ("Zaps") work when using an LNBits or LND backend, other backends (sparko, lnpay, eclair, commando) still need verification of payments in waitforinvoice.go by API calls in order to sign the zap on Nostr. (Help appreciated, because I can't test them)
 - NIP05 support: If user added a npub, they can use lnaddress for Nostr NIP05 verificaton
+- Downloads Profile pictures when given npub key (for supported walles, e.g. blue wallet)
 - Comments from Damus testflight are forwarded to lnbits (needs some rework)
 - Added possibility to add a forward main page, go to /lnaddress to add new users
 - Added an alternative API '/api/easy' that deletes users and creates new name and pin for them
