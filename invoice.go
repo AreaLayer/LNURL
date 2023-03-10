@@ -25,9 +25,11 @@ func metaData(params *Params) lnurl.Metadata {
 		LightningAddress: fmt.Sprintf("%s@%s", params.Name, params.Domain),
 	}
 
-	NostrProfile, _ := GetNostrProfileMetaData(params.Npub)
+	if params.Npub != "" {
+		NostrProfile, _ := GetNostrProfileMetaData(params.Npub)
+		addImageToMetaData(&metadata, NostrProfile.Picture)
+	}
 
-	addImageToMetaData(&metadata, NostrProfile.Picture)
 	return metadata
 
 }
@@ -40,7 +42,7 @@ func addImageToMetaData(metadata *lnurl.Metadata, imageurl string) {
 	// 	log.Debug().Str("Downloading profile picture", err.Error()).Msg("Error")
 	// 	return
 	// }
-	metadata.Image.Ext = "jpeg"
+	metadata.Image.Ext = "jpeg" //filepath.Ext(imageurl)
 	metadata.Image.DataURI = imageurl
 	metadata.Image.Bytes = picture
 }
@@ -64,7 +66,7 @@ func DownloadProfilePicture(url string) ([]byte, error) {
 	img = resize.Thumbnail(160, 160, img, resize.Lanczos3)
 	buf := new(bytes.Buffer)
 	_ = jpeg.Encode(buf, img, nil)
-	ioutil.WriteFile("test.jpg", buf.Bytes(), 0666)
+	//ioutil.WriteFile("test.jpg", buf.Bytes(), 0666)
 	return buf.Bytes(), nil
 }
 
