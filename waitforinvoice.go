@@ -171,20 +171,15 @@ func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params, comment 
 				//If invoice is paid and DescriptionHash matches Nip57 DescriptionHash, publish Zap Nostr Event. This is rather a sanity check.
 				if isPaid {
 
-					if payvalues.nip57Receipt.Kind == 0 {
-						log.Debug().Str("Paid", "Paid non-Nostr Invoice").Msg("Paid")
-						close(quit)
-						return
-					}
-
 					log.Debug().Str("DescriptionHash", bolt11.DescriptionHash).Msg("zapped")
 					log.Debug().Str("Description", bolt11.Description).Msg("zapped")
 					var descriptionTag = *payvalues.nip57Receipt.Tags.GetFirst([]string{"description"})
-					if (bolt11.DescriptionHash == Nip57DescriptionHash(descriptionTag.Value())) || (bolt11.Description == comment && descriptionTag.Value() != "") {
+					if bolt11.DescriptionHash == Nip57DescriptionHash(descriptionTag.Value()) {
 						log.Debug().Str("ZAP", "Published on Nostr").Msg("zapped")
 						publishNostrEvent(payvalues.nip57Receipt, payvalues.nip57ReceiptRelays)
 						close(quit)
 						return
+
 					}
 				}
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -11,7 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/nbd-wtf/go-nostr"
 	"github.com/nfnt/resize"
 
 	"github.com/fiatjaf/go-lnurl"
@@ -129,23 +127,23 @@ func makeInvoice(
 		//use zapEventSerializedStr if nip57, else build hash descriptionhash from params
 		if zapEventSerializedStr != "" {
 			//Ok here it gets a bit tricky (due to lack of standards, if we have a comment, we overwrite it)
-			if comment != "" {
-				mip.Memo = comment
-				var zapEvent nostr.Event
-				err = json.Unmarshal([]byte(zapEventSerializedStr), &zapEvent)
-				if zapEvent.Content == "" {
-					zapEvent.Content = comment
-					zapEventSerialized, _ := json.Marshal(zapEvent)
-					zapEventSerializedStr = fmt.Sprintf("%s", zapEventSerialized)
-				}
-			}
+			// if comment != "" {
+			// 	mip.Memo = comment
+			// 	// var zapEvent nostr.Event
+			// 	// err = json.Unmarshal([]byte(zapEventSerializedStr), &zapEvent)
+			// 	// if zapEvent.Content == "" {
+			// 	// 	zapEvent.Content = comment
+			// 	// 	zapEventSerialized, _ := json.Marshal(zapEvent)
+			// 	// 	zapEventSerializedStr = fmt.Sprintf("%s", zapEventSerialized)
+			// 	// }
+			// }
 
 			mip.Description = zapEventSerializedStr
 
 		} else {
 			// make the lnurlpay description_hash
 			mip.Description = metaData(params).Encode()
-			mip.Memo = comment
+			//mip.Memo = comment
 		}
 
 		mip.UseDescriptionHash = true

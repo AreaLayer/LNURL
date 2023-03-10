@@ -21,7 +21,6 @@ import (
 	lightning "github.com/fiatjaf/lightningd-gjson-rpc"
 	lnsocket "github.com/jb55/lnsocket/go"
 	"github.com/lnpay/lnpay-go"
-	"github.com/nbd-wtf/go-nostr"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	// "github.com/fiatjaf/makeinvoice"
@@ -226,23 +225,24 @@ func MakeInvoice(params MIParams) (bolt11 string, err error) {
 		body, _ = sjson.Set(body, "out", false)
 
 		if params.UseDescriptionHash {
-			var zapEvent nostr.Event
-			err = json.Unmarshal([]byte(params.Description), &zapEvent)
-			if err == nil && zapEvent.Content != "" {
-				//This works
-				log.Debug().Str("Zap Event Content", zapEvent.Content).Msg("Message")
-				body, _ = sjson.Set(body, "memo", zapEvent.Content)
-			} else {
+			//var zapEvent nostr.Event
+			//err = json.Unmarshal([]byte(params.Description), &zapEvent)
+			// if err == nil && zapEvent.Content != "" {
+			// 	//This works
+			// 	log.Debug().Str("Zap Event Content", zapEvent.Content).Msg("Message")
+			// 	body, _ = sjson.Set(body, "unhashed_description", hex.EncodeToString([]byte(zapEvent.Content)))
+			// 	//body, _ = sjson.Set(body, "memo", zapEvent.Content)
+			// } else {
 
-				//But this does not?
-				// if params.Memo != "" {
-				// 	log.Debug().Str("Empty/Non Zap Event Content", params.Memo).Msg("Message")
-				// 	body, _ = sjson.Set(body, "memo", params.Memo)
-				// } else {
-				log.Debug().Str("Empty/Non Zap Event Hash", hex.EncodeToString([]byte(params.Description))).Msg("Message")
-				body, _ = sjson.Set(body, "unhashed_description", hex.EncodeToString([]byte(params.Description)))
-				//}
-			}
+			//But this does not?
+			// if params.Memo != "" {
+			// 	log.Debug().Str("Empty/Non Zap Event Content", params.Memo).Msg("Message")
+			// 	body, _ = sjson.Set(body, "memo", params.Memo)
+			// } else {
+			//log.Debug().Str("Empty/Non Zap Event Hash", hex.EncodeToString([]byte(params.Description))).Msg("Message")
+			body, _ = sjson.Set(body, "unhashed_description", hex.EncodeToString([]byte(params.Description)))
+			//}
+			//}
 
 		} else {
 			if params.Description == "" {
