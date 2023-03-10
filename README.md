@@ -48,6 +48,7 @@ Maybe ask for help on https://t.me/lnurl if you're in trouble.
 - NIP05 support: If user added a npub, they can use lnaddress for Nostr NIP05 verificaton
 - Downloads Profile pictures when given npub key (for supported walles, e.g. blue wallet)
 - Comments from Damus testflight are forwarded to lnbits (needs some rework)
+- Addded possibilit to forward lightning addresses to existing ones (e.g. Wallet of Satoshi)
 - Added possibility to add a forward main page, go to /lnaddress to add new users
 - Added an alternative API '/api/easy' that deletes users and creates new name and pin for them
 - Code needs some refactoring
