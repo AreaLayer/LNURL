@@ -11,10 +11,18 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	decodepay "github.com/nbd-wtf/ln-decodepay"
 	"github.com/tidwall/gjson"
+)
+
+var (
+	TorProxyURL = "socks5://127.0.0.1:9050"
+	Client      = &http.Client{
+		Timeout: 25 * time.Second,
+	}
 )
 
 type LNParams struct {
@@ -29,9 +37,76 @@ type LNParams struct {
 	Label string // only used for c-lightning
 }
 
-func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params, comment string) {
-	//Check for a minute if invoice is paid
-	//Do we have an easier way to do  this? How does it work for other backends than lnbits.
+type CommandoParams struct {
+	Rune   string
+	Host   string
+	NodeId string
+}
+
+func (l CommandoParams) getCert() string { return "" }
+func (l CommandoParams) isTor() bool     { return strings.Contains(l.Host, ".onion") }
+
+type SparkoParams struct {
+	Cert string
+	Host string
+	Key  string
+}
+
+func (l SparkoParams) getCert() string { return l.Cert }
+func (l SparkoParams) isTor() bool     { return strings.Contains(l.Host, ".onion") }
+
+type LNDParams struct {
+	Cert     string
+	Host     string
+	Macaroon string
+}
+
+func (l LNDParams) getCert() string { return l.Cert }
+func (l LNDParams) isTor() bool     { return strings.Contains(l.Host, ".onion") }
+
+type LNBitsParams struct {
+	Cert string
+	Host string
+	Key  string
+}
+
+func (l LNBitsParams) getCert() string { return l.Cert }
+func (l LNBitsParams) isTor() bool     { return strings.Contains(l.Host, ".onion") }
+
+type LNPayParams struct {
+	PublicAccessKey  string
+	WalletInvoiceKey string
+}
+
+func (l LNPayParams) getCert() string { return "" }
+func (l LNPayParams) isTor() bool     { return false }
+
+type EclairParams struct {
+	Host     string
+	Password string
+	Cert     string
+}
+
+func (l EclairParams) getCert() string { return l.Cert }
+func (l EclairParams) isTor() bool     { return strings.Contains(l.Host, ".onion") }
+
+type StrikeParams struct {
+	Key      string
+	Username string
+	Currency string
+}
+
+func (l StrikeParams) getCert() string { return "" }
+func (l StrikeParams) isTor() bool     { return false }
+
+type BackendParams interface {
+	getCert() string
+	isTor() bool
+}
+
+func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params) {
+	// Check for a minute if invoice is paid
+	// Do we have an easier way to do  this? How does it work for other backends than lnbits.
 	go func() {
 		var backend BackendParams
 		switch params.Kind {
@@ -167,30 +242,24 @@ func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params, comment 
 					//TODO
 
 				}
+				//Timeout waiting for payment after maxiterations
+				if maxiterations == 0 {
+					log.Debug().Str("NIP57", bolt11.PaymentHash).Msg("Timed out")
+					close(quit)
+				}
 
 				//If invoice is paid and DescriptionHash matches Nip57 DescriptionHash, publish Zap Nostr Event. This is rather a sanity check.
 				if isPaid {
-
-					log.Debug().Str("DescriptionHash", bolt11.DescriptionHash).Msg("zapped")
-					log.Debug().Str("Description", bolt11.Description).Msg("zapped")
 					var descriptionTag = *payvalues.nip57Receipt.Tags.GetFirst([]string{"description"})
 					if bolt11.DescriptionHash == Nip57DescriptionHash(descriptionTag.Value()) {
 						log.Debug().Str("ZAP", "Published on Nostr").Msg("zapped")
 						publishNostrEvent(payvalues.nip57Receipt, payvalues.nip57ReceiptRelays)
 						close(quit)
 						return
-
 					}
-				}
 
-				//Timeout waiting for payment after maxiterations
-				if maxiterations == 0 {
-					log.Debug().Str("NIP57 Bolt11", bolt11.PaymentHash).Msg("Timed out")
-					close(quit)
-					return
+					maxiterations--
 				}
-				maxiterations--
-
 			case <-quit:
 				ticker.Stop()
 				return

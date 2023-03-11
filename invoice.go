@@ -13,7 +13,7 @@ import (
 	"github.com/nfnt/resize"
 
 	"github.com/fiatjaf/go-lnurl"
-	// "github.com/fiatjaf/makeinvoice"
+	"github.com/fiatjaf/makeinvoice"
 )
 
 func metaData(params *Params) lnurl.Metadata {
@@ -35,11 +35,11 @@ func metaData(params *Params) lnurl.Metadata {
 // addImageMetaData add images an image to the LNURL metadata
 func addImageToMetaData(metadata *lnurl.Metadata, imageurl string) {
 
-	picture, _ := DownloadProfilePicture(imageurl)
-	// if err != nil {
-	// 	log.Debug().Str("Downloading profile picture", err.Error()).Msg("Error")
-	// 	return
-	// }
+	picture, err := DownloadProfilePicture(imageurl)
+	if err != nil {
+		log.Debug().Str("Downloading profile picture", err.Error()).Msg("Error")
+		return
+	}
 	metadata.Image.Ext = "jpeg" //filepath.Ext(imageurl)
 	metadata.Image.DataURI = imageurl
 	metadata.Image.Bytes = picture
@@ -49,11 +49,13 @@ func DownloadProfilePicture(url string) ([]byte, error) {
 	res, err := http.Get(url)
 
 	if err != nil {
-		//log.Fatalf("http.Get -> %v", err)
+		log.Debug().Str("http.Get ->", err.Error()).Msg("Error")
+		return nil, err
 	}
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		// log.Fatalf("ioutil.ReadAll -> %v", err)
+		log.Debug().Str("ioutil.ReadAll ->", err.Error()).Msg("Error")
+		return nil, err
 	}
 	res.Body.Close()
 	img, _, err := image.Decode(bytes.NewReader(data))
@@ -77,43 +79,42 @@ func makeInvoice(
 ) (bolt11 string, err error) {
 	// prepare params
 
-	var backend BackendParams
+	var backend makeinvoice.BackendParams
 	switch params.Kind {
 	case "sparko":
-		backend = SparkoParams{
+		backend = makeinvoice.SparkoParams{
 			Host: params.Host,
 			Key:  params.Key,
 		}
 	case "lnd":
-		backend = LNDParams{
+		backend = makeinvoice.LNDParams{
 			Host:     params.Host,
 			Macaroon: params.Key,
 		}
 	case "lnbits":
-		backend = LNBitsParams{
+		backend = makeinvoice.LNBitsParams{
 			Host: params.Host,
 			Key:  params.Key,
-			Memo: comment,
 		}
 	case "lnpay":
-		backend = LNPayParams{
+		backend = makeinvoice.LNPayParams{
 			PublicAccessKey:  params.Pak,
 			WalletInvoiceKey: params.Waki,
 		}
 	case "eclair":
-		backend = EclairParams{
+		backend = makeinvoice.EclairParams{
 			Host:     params.Host,
 			Password: "",
 		}
 	case "commando":
-		backend = CommandoParams{
+		backend = makeinvoice.CommandoParams{
 			Host:   params.Host,
 			NodeId: params.NodeId,
 			Rune:   params.Rune,
 		}
 	}
 
-	mip := MIParams{
+	mip := makeinvoice.Params{
 		Msatoshi: int64(msat),
 		Backend:  backend,
 
@@ -126,24 +127,10 @@ func makeInvoice(
 	} else {
 		//use zapEventSerializedStr if nip57, else build hash descriptionhash from params
 		if zapEventSerializedStr != "" {
-			//Ok here it gets a bit tricky (due to lack of standards, if we have a comment, we overwrite it)
-			// if comment != "" {
-			// 	mip.Memo = comment
-			// 	// var zapEvent nostr.Event
-			// 	// err = json.Unmarshal([]byte(zapEventSerializedStr), &zapEvent)
-			// 	// if zapEvent.Content == "" {
-			// 	// 	zapEvent.Content = comment
-			// 	// 	zapEventSerialized, _ := json.Marshal(zapEvent)
-			// 	// 	zapEventSerializedStr = fmt.Sprintf("%s", zapEventSerialized)
-			// 	// }
-			// }
-
 			mip.Description = zapEventSerializedStr
-
 		} else {
 			// make the lnurlpay description_hash
 			mip.Description = metaData(params).Encode()
-			//mip.Memo = comment
 		}
 
 		mip.UseDescriptionHash = true
@@ -151,7 +138,7 @@ func makeInvoice(
 	}
 
 	// actually generate the invoice
-	bolt11, err = MakeInvoice(mip)
+	bolt11, err = makeinvoice.MakeInvoice(mip)
 
 	log.Debug().Int("msatoshi", msat).
 		Interface("backend", backend).

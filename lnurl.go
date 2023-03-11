@@ -217,7 +217,7 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 		//if we provided a nsec and the response contained zap information, we wait for the invoice to be paid
 		//in order to submit the zap on nostr
 		if allowNostr && payvaluescustom.awaitInvoicePaid {
-			go WaitForInvoicePaid(payvaluescustom, params, comment)
+			go WaitForInvoicePaid(payvaluescustom, params)
 		}
 	}
 }
