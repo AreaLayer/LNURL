@@ -52,13 +52,13 @@ func handleNip05(w http.ResponseWriter, r *http.Request) {
 
 	var allusers []Params
 	allusers, err = GetAllUsers(s.Domain)
-	firstpartstring := "{\n\t\"names\": {\n"
-	finalpartstring := "\t\t}\n}"
+	firstpartstring := "{\n  \"names\": {\n"
+	finalpartstring := " \t}\n}"
 	var middlestring = ""
 
 	for _, user := range allusers {
 		if user.Npub != "" { //do some more validation checks
-			middlestring = middlestring + "\t\t\"" + user.Name + "\"" + ": " + "\"" + DecodeBench32(user.Npub) + "\"" + ",\n"
+			middlestring = middlestring + "\t\"" + user.Name + "\"" + ": " + "\"" + DecodeBench32(user.Npub) + "\"" + ",\n"
 		}
 
 	}
