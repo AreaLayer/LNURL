@@ -69,9 +69,9 @@ func handleNip05(w http.ResponseWriter, r *http.Request) {
 
 			middlestringtrim += "\n"
 			response = firstpartstring + middlestringtrim + finalpartstring
+
 		}
-		// w.Header().Set("Access-Control-Allow-Origin", "*")
-		// w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		fmt.Fprintf(w, response)
 	} else {
 		return
