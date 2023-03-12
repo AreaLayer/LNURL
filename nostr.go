@@ -60,16 +60,15 @@ func handleNip05(w http.ResponseWriter, r *http.Request) {
 		if user.Npub != "" { //do some more validation checks
 			middlestring = middlestring + "\t\"" + user.Name + "\"" + ": " + "\"" + DecodeBench32(user.Npub) + "\"" + ",\n"
 		}
-
 	}
 
 	if s.Nip05 {
+		//Remove ',' from last entry
 		if len(middlestring) > 2 {
 			middlestringtrim := middlestring[:len(middlestring)-2]
-
 			middlestringtrim += "\n"
-			response = firstpartstring + middlestringtrim + finalpartstring
 
+			response = firstpartstring + middlestringtrim + finalpartstring
 		}
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		fmt.Fprintf(w, response)
@@ -162,7 +161,7 @@ func ExtractNostrRelays(zapEvent nostr.Event) []string {
 	nip57ReceiptRelaysTags := zapEvent.Tags.GetFirst([]string{"relays"})
 	if len(fmt.Sprintf("%s", nip57ReceiptRelaysTags)) > 0 {
 		nip57ReceiptRelays = strings.Split(fmt.Sprintf("%s", nip57ReceiptRelaysTags), " ")
-		// this tirty method returns slice [ "[relays", "wss...", "wss...", "wss...]" ] – we need to clean it up
+		// this dirty method returns slice [ "[relays", "wss...", "wss...", "wss...]" ] – we need to clean it up
 		if len(nip57ReceiptRelays) > 1 {
 			// remove the first entry
 			nip57ReceiptRelays = nip57ReceiptRelays[1:]

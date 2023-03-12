@@ -48,9 +48,9 @@ type LNURLPayValuesCustom struct {
 	From               string               `json:"from"`
 	ParsedInvoice      decodepay.Bolt11     `json:"-"`
 	PayerDataJSON      string               `json:"-"`
-	nip57Receipt       nostr.Event          `json:"nip57Receipt"`
-	nip57ReceiptRelays []string             `json:"nip57ReceiptRelays"`
-	awaitInvoicePaid   bool                 `json:"awaitInvoicePaid"`
+	Nip57Receipt       nostr.Event          `json:"nip57Receipt"`
+	Nip57ReceiptRelays []string             `json:"nip57ReceiptRelays"`
+	AwaitInvoicePaid   bool                 `json:"awaitInvoicePaid"`
 }
 
 func handleLNURL(w http.ResponseWriter, r *http.Request) {
@@ -89,6 +89,8 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	//if account is a forward account we simply redirect to the other address.
+	//everything is handled from there. In this case, we only provide Address/NIP05
 	if params.Kind == "forward" {
 		http.Redirect(w, r, params.Host, http.StatusSeeOther)
 		return
@@ -152,19 +154,17 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 		if len(zapEventQuery) > 0 {
 			err = json.Unmarshal([]byte(zapEventQuery), &zapEvent)
 			if err != nil {
-				log.Error().Err(err).Str("[handleLnUrl] Couldn't parse nostr event: ", err.Error())
-
+				log.Error().Err(err).Str("Couldn't parse nostr event: ", err.Error())
 			} else {
 				valid, err := zapEvent.CheckSignature()
 				if !valid || err != nil {
-					log.Error().Err(err).Str("[handleLnUrl] Nostr NIP-57 zap event signature invalid: ", err.Error())
+					log.Error().Err(err).Str("Nostr NIP-57 zap event signature invalid: ", err.Error())
 					return
 				}
 				if len(zapEvent.Tags) == 0 || zapEvent.Tags.GetFirst([]string{"p"}) == nil {
-					log.Error().Err(err).Str("[handleLnUrl] Nostr NIP-57 zap event validation error ", err.Error())
+					log.Error().Err(err).Str("Nostr NIP-57 zap event validation error ", err.Error())
 					return
 				}
-
 			}
 			comment = zapEvent.Content
 			log.Debug().Str("NIP57 Comment received", comment).Msg("Comment")
@@ -174,12 +174,12 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 		//If a comment is send with the Invoice, always use it (?)
 		regularcomment := r.FormValue("comment")
 		if len(regularcomment) > CommentAllowed {
-			log.Error().Err(err).Str("[handleLnUrl] Comment is too long", err.Error())
+			log.Error().Err(err).Str("Comment is too long", err.Error())
 			return
 		}
 		if len(regularcomment) > 0 {
 			comment = regularcomment
-			log.Debug().Str("Regular Comment received", comment).Msg("Comment")
+			log.Debug().Str("Comment received", comment).Msg("Comment")
 		}
 		// payer data, not used currently
 		payerdata := r.FormValue("payerdata")
@@ -187,7 +187,7 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 		if len(payerdata) > 0 {
 			err = json.Unmarshal([]byte(payerdata), &payerData)
 			if err != nil {
-				log.Error().Err(err).Str("[handleLnUrl] Couldn't parse payerdata", err.Error())
+				log.Error().Err(err).Str("Couldn't parse payerdata", err.Error())
 			}
 		}
 
@@ -195,10 +195,8 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 		response, err = serveLNURLpSecond(w, params, username, msat, comment, payerData, zapEvent)
 		var payvaluescustom = response.(LNURLPayValuesCustom)
 		if err != nil {
-			if response != nil {
-				// there is a valid error response
-				json.NewEncoder(w).Encode(response)
-			}
+			// there is a valid error response
+			json.NewEncoder(w).Encode(response)
 			return
 		}
 
@@ -209,14 +207,9 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 			SuccessAction: payvaluescustom.SuccessAction,
 		})
 
-		// if err != nil {
-		// 	json.NewEncoder(w).Encode(response)
-		// 	return
-		// }
-
 		//if we provided a nsec and the response contained zap information, we wait for the invoice to be paid
 		//in order to submit the zap on nostr
-		if allowNostr && payvaluescustom.awaitInvoicePaid {
+		if allowNostr && payvaluescustom.AwaitInvoicePaid {
 			go WaitForInvoicePaid(payvaluescustom, params)
 		}
 	}
@@ -235,7 +228,6 @@ func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, a
 
 	// NIP57 ZAPs
 	// for nip57 use the nostr event as the descriptionHash
-
 	if zapEvent.Sig != "" {
 		// we calculate the descriptionHash here, create an invoice with it
 		// and store the invoice in the zap receipt later down the line
@@ -268,7 +260,9 @@ func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, a
 		}
 		return response, err
 	}
-	var awaitPaid = false //Check invoice paid if we actually have a NIP57 event
+
+	//Check invoice paid only if we actually have a NIP57 event
+	var awaitPaid = false
 	// nip57 - we need to store the newly created invoice in the zap receipt
 	if zapEvent.Sig != "" {
 		nip57Receipt = CreateNostrReceipt(zapEvent, invoice)
@@ -281,9 +275,9 @@ func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, a
 		Routes:             make([]struct{}, 0),
 		SuccessAction:      &lnurl.SuccessAction{Message: "Payment Received!", Tag: "message"},
 		Comment:            comment,
-		nip57Receipt:       nip57Receipt,
-		nip57ReceiptRelays: nip57ReceiptRelays,
-		awaitInvoicePaid:   awaitPaid,
+		Nip57Receipt:       nip57Receipt,
+		Nip57ReceiptRelays: nip57ReceiptRelays,
+		AwaitInvoicePaid:   awaitPaid,
 	}, nil
 
 }

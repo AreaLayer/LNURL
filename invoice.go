@@ -123,17 +123,18 @@ func makeInvoice(
 
 	if pin != nil {
 		// use this as the description for new accounts
+		mip.UseDescriptionHash = false
 		mip.Description = fmt.Sprintf("%s's PIN for '%s@%s' lightning address: %s", params.Domain, params.Name, params.Domain, *pin)
 	} else {
-		//use zapEventSerializedStr if nip57, else build hash descriptionhash from params
+		//use zapEventSerializedStr if nip57,
+		mip.UseDescriptionHash = true
 		if zapEventSerializedStr != "" {
 			mip.Description = zapEventSerializedStr
+
 		} else {
-			// make the lnurlpay description_hash
+			//else build hash descriptionhash from params
 			mip.Description = metaData(params).Encode()
 		}
-
-		mip.UseDescriptionHash = true
 
 	}
 
