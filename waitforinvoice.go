@@ -181,9 +181,8 @@ func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params) {
 			case <-ticker.C:
 
 				bolt11, _ := decodepay.Decodepay(payvalues.PR)
-				var isPaid bool = false
-
 				switch backend := mip.Backend.(type) {
+
 				case LNDParams:
 					req, err := http.NewRequest("GET",
 						backend.Host+"/v1/invoice/"+bolt11.PaymentHash,
@@ -210,7 +209,8 @@ func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params) {
 					}
 
 					if gjson.ParseBytes(b).Get("settled").String() == "true" {
-						isPaid = true
+						payvalues.PaidAt = time.Now()
+						payvalues.Paid = true
 					}
 
 				case LNBitsParams:
@@ -229,14 +229,15 @@ func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params) {
 					json.Unmarshal([]byte(string(responseData)), &jsonMap)
 
 					if jsonMap["paid"].(bool) {
-						isPaid = true
+						payvalues.PaidAt = time.Now()
+						payvalues.Paid = true
 					}
 
-				case SparkoParams:
-					//TODO
 				case LNPayParams:
 					//TODO
 				case EclairParams:
+					//TODO
+				case SparkoParams:
 					//TODO
 				case CommandoParams:
 					//TODO
@@ -249,7 +250,7 @@ func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params) {
 				}
 
 				//If invoice is paid and DescriptionHash matches Nip57 DescriptionHash, publish Zap Nostr Event. This is rather a sanity check.
-				if isPaid {
+				if payvalues.Paid {
 					var descriptionTag = *payvalues.Nip57Receipt.Tags.GetFirst([]string{"description"})
 					if bolt11.DescriptionHash == Nip57DescriptionHash(descriptionTag.Value()) {
 						publishNostrEvent(payvalues.Nip57Receipt, payvalues.Nip57ReceiptRelays)

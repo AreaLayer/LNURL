@@ -166,8 +166,10 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 					return
 				}
 			}
-			comment = zapEvent.Content
-			log.Debug().Str("NIP57 Comment received", comment).Msg("Comment")
+			if len(zapEvent.Content) > 0 {
+				comment = zapEvent.Content
+				log.Debug().Str("NIP57 Comment received", comment).Msg("Comment")
+			}
 
 		}
 
@@ -269,12 +271,16 @@ func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, a
 		awaitPaid = true
 	}
 
+	decoded_invoice, _ := decodepay.Decodepay(invoice)
 	return LNURLPayValuesCustom{
 		LNURLResponse:      lnurl.LNURLResponse{Status: "OK"},
 		PR:                 invoice,
 		Routes:             make([]struct{}, 0),
 		SuccessAction:      &lnurl.SuccessAction{Message: "Payment Received!", Tag: "message"},
 		Comment:            comment,
+		Paid:               false,
+		CreatedAt:          time.Now(),
+		ParsedInvoice:      decoded_invoice,
 		Nip57Receipt:       nip57Receipt,
 		Nip57ReceiptRelays: nip57ReceiptRelays,
 		AwaitInvoicePaid:   awaitPaid,
