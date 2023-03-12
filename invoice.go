@@ -24,8 +24,11 @@ func metaData(params *Params) lnurl.Metadata {
 	}
 
 	if params.Npub != "" {
-		NostrProfile, _ := GetNostrProfileMetaData(params.Npub)
-		addImageToMetaData(&metadata, NostrProfile.Picture)
+		NostrProfile, err := GetNostrProfileMetaData(params.Npub)
+		if err == nil {
+			addImageToMetaData(&metadata, NostrProfile.Picture)
+		}
+
 	}
 
 	return metadata

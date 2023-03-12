@@ -89,7 +89,7 @@ func GetNostrProfileMetaData(npub string) (nostr.ProfileMetadata, error) {
 	url := "wss://relay.damus.io"
 	relay, err := nostr.RelayConnect(ctx, url)
 	if err != nil {
-		panic(err)
+		return *metadata, err
 	}
 
 	// create filters
