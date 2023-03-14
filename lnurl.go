@@ -96,7 +96,7 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Info().Str("username", username).Str("domain", domain).Msg("got lnurl request")
+	log.Debug().Str("username", username).Str("domain", domain).Msg("got lnurl request")
 
 	if amount := r.URL.Query().Get("amount"); amount == "" {
 		// convert configured sendable amounts to integer

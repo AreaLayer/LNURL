@@ -89,6 +89,7 @@ func GetNostrProfileMetaData(npub string) (nostr.ProfileMetadata, error) {
 	url := "wss://relay.damus.io"
 	relay, err := nostr.RelayConnect(ctx, url)
 	if err != nil {
+		cancel()
 		return *metadata, err
 	}
 
@@ -104,6 +105,7 @@ func GetNostrProfileMetaData(npub string) (nostr.ProfileMetadata, error) {
 			Limit: 1,
 		}}
 	} else {
+		cancel()
 		return *metadata, err
 
 	}
