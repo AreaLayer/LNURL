@@ -226,7 +226,11 @@ func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params) {
 						return
 					}
 					var jsonMap map[string]interface{}
-					json.Unmarshal([]byte(string(responseData)), &jsonMap)
+					err = json.Unmarshal([]byte(string(responseData)), &jsonMap)
+					if err != nil {
+						fmt.Print(err.Error())
+						return
+					}
 
 					if jsonMap["paid"].(bool) {
 						payvalues.PaidAt = time.Now()
