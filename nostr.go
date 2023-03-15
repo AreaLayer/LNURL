@@ -82,14 +82,13 @@ func handleNip05(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetNostrProfileMetaData(npub string) (nostr.ProfileMetadata, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
 
 	var metadata *nostr.ProfileMetadata
 	// connect to any relay
 	url := "wss://relay.damus.io"
 	relay, err := nostr.RelayConnect(ctx, url)
 	if err != nil {
-		cancel()
 		return *metadata, err
 	}
 
@@ -105,7 +104,6 @@ func GetNostrProfileMetaData(npub string) (nostr.ProfileMetadata, error) {
 			Limit: 1,
 		}}
 	} else {
-		cancel()
 		return *metadata, err
 
 	}
@@ -114,15 +112,16 @@ func GetNostrProfileMetaData(npub string) (nostr.ProfileMetadata, error) {
 
 	go func() {
 		<-sub.EndOfStoredEvents
-		cancel()
+
 	}()
 
 	for ev := range sub.Events {
 
 		evs = append(evs, *ev)
 	}
-	metadata, err = nostr.ParseMetadata(evs[0])
+	relay.Close()
 
+	metadata, err = nostr.ParseMetadata(evs[0])
 	return *metadata, err
 
 }

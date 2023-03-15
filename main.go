@@ -24,16 +24,16 @@ type Settings struct {
 	Domain string `envconfig:"DOMAIN" required:"true"`
 	// GlobalUsers means that user@ part is globally unique across all domains
 	// WARNING: if you toggle this existing users won't work anymore for safety reasons!
-	GlobalUsers        bool   `envconfig:"GLOBAL_USERS" required:"false" default:false`
+	GlobalUsers        bool   `envconfig:"GLOBAL_USERS" default:"false"`
 	Secret             string `envconfig:"SECRET" required:"true"`
 	SiteOwnerName      string `envconfig:"SITE_OWNER_NAME" required:"true"`
 	SiteOwnerURL       string `envconfig:"SITE_OWNER_URL" required:"true"`
 	SiteName           string `envconfig:"SITE_NAME" required:"true"`
 	NostrPrivateKey    string `envconfig:"NOSTR_PRIVATE_KEY" required:"false" default:""`
-	ForwardMainPageUrl string `envconfig:"FORWARD_URL"`
-	Nip05              bool   `envconfig:"NIP05" required:"false" default:false`
-	GetNostrProfile    bool   `envconfig:"GetNostrProfile" required:"false" default:false`
-	ForceMigrate       bool   `envconfig:"FORCE_MIGRATE" required:"false" default:false`
+	ForwardMainPageUrl string `envconfig:"FORWARD_URL" required:"false"`
+	Nip05              bool   `envconfig:"NIP05" default:"false" required:"false"`
+	GetNostrProfile    bool   `envconfig:"GET_NOSTR_PROFILE" required:"false" default:"false"`
+	ForceMigrate       bool   `envconfig:"FORCE_MIGRATE"  default:"false"`
 	TorProxyURL        string `envconfig:"TOR_PROXY_URL"`
 }
 
