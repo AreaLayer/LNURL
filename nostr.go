@@ -121,7 +121,11 @@ func GetNostrProfileMetaData(npub string) (nostr.ProfileMetadata, error) {
 	}
 	relay.Close()
 
-	metadata, err = nostr.ParseMetadata(evs[0])
+	if len(evs) > 0 {
+		metadata, err = nostr.ParseMetadata(evs[0])
+	} else {
+		err = fmt.Errorf("no profile found for npub %s on relay %s", npub, url)
+	}
 	return *metadata, err
 
 }
