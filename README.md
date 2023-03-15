@@ -11,6 +11,8 @@ Federated Lightning Address Server (with NIP57 Zap support)
 
 > The Nostr private key in the parameters should be in bench32 format (`nsec..`) and it should be a new one. It is needed to sign messages only, so does not need to be your main account key.
 
+(`GetNostrProfile`) is still experimental and should be left on false in case it causes errors. The idea is to provide the Nostr Profile picture to wallets that support it.
+
 ```
 PORT=17422
 DOMAIN=bitmia.com
@@ -21,6 +23,7 @@ SITE_NAME=Bitmia
 NOSTR_PRIVATE_KEY=nsec213....
 FORWARD_URL=https://thepageyouwanttoshowasmainpage.com
 NIP05=true
+GetNostrProfile=false
 ```
 
 3. Start the app with `./satdress` or `nohup ./satdress &` for a background task

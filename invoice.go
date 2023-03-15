@@ -23,7 +23,7 @@ func metaData(params *Params) lnurl.Metadata {
 		LightningAddress: fmt.Sprintf("%s@%s", params.Name, params.Domain),
 	}
 
-	if params.Npub != "" {
+	if params.Npub != "" && s.GetNostrProfile {
 		NostrProfile, err := GetNostrProfileMetaData(params.Npub)
 		if err == nil {
 			addImageToMetaData(&metadata, NostrProfile.Picture)

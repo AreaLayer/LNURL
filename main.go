@@ -32,6 +32,7 @@ type Settings struct {
 	NostrPrivateKey    string `envconfig:"NOSTR_PRIVATE_KEY" required:"false" default:""`
 	ForwardMainPageUrl string `envconfig:"FORWARD_URL"`
 	Nip05              bool   `envconfig:"NIP05" required:"false" default:false`
+	GetNostrProfile    bool   `envconfig:"GetNostrProfile" required:"false" default:false`
 	ForceMigrate       bool   `envconfig:"FORCE_MIGRATE" required:"false" default:false`
 	TorProxyURL        string `envconfig:"TOR_PROXY_URL"`
 }
