@@ -13,7 +13,6 @@ import (
 	"github.com/nfnt/resize"
 
 	"github.com/fiatjaf/go-lnurl"
-	"github.com/fiatjaf/makeinvoice"
 )
 
 func metaData(params *Params) lnurl.Metadata {
@@ -82,42 +81,42 @@ func makeInvoice(
 ) (bolt11 string, err error) {
 	// prepare params
 
-	var backend makeinvoice.BackendParams
+	var backend BackendParams
 	switch params.Kind {
 	case "sparko":
-		backend = makeinvoice.SparkoParams{
+		backend = SparkoParams{
 			Host: params.Host,
 			Key:  params.Key,
 		}
 	case "lnd":
-		backend = makeinvoice.LNDParams{
+		backend = LNDParams{
 			Host:     params.Host,
 			Macaroon: params.Key,
 		}
 	case "lnbits":
-		backend = makeinvoice.LNBitsParams{
+		backend = LNBitsParams{
 			Host: params.Host,
 			Key:  params.Key,
 		}
 	case "lnpay":
-		backend = makeinvoice.LNPayParams{
+		backend = LNPayParams{
 			PublicAccessKey:  params.Pak,
 			WalletInvoiceKey: params.Waki,
 		}
 	case "eclair":
-		backend = makeinvoice.EclairParams{
+		backend = EclairParams{
 			Host:     params.Host,
 			Password: "",
 		}
 	case "commando":
-		backend = makeinvoice.CommandoParams{
+		backend = CommandoParams{
 			Host:   params.Host,
 			NodeId: params.NodeId,
 			Rune:   params.Rune,
 		}
 	}
 
-	mip := makeinvoice.Params{
+	mip := LNParams{
 		Msatoshi: int64(msat),
 		Backend:  backend,
 
@@ -142,7 +141,7 @@ func makeInvoice(
 	}
 
 	// actually generate the invoice
-	bolt11, err = makeinvoice.MakeInvoice(mip)
+	bolt11, err = MakeInvoice(mip)
 
 	log.Debug().Int("msatoshi", msat).
 		Interface("backend", backend).
