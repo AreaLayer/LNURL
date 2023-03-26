@@ -12,6 +12,7 @@ import (
 	"github.com/cockroachdb/pebble"
 	"github.com/fiatjaf/makeinvoice"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	_ "github.com/lib/pq"
 	"github.com/rs/cors"
@@ -54,6 +55,8 @@ var grabHTML string
 var static embed.FS
 
 func main() {
+
+	godotenv.Load(".env")
 	err := envconfig.Process("", &s)
 	if err != nil {
 		log.Fatal().Err(err).Msg("couldn't process envconfig.")

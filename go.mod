@@ -54,6 +54,7 @@ require (
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/imroc/req v0.3.2 // indirect
 	github.com/jb55/lnsocket/go v0.0.0-20220812055138-93307d1bfe4c // indirect
+	github.com/joho/godotenv v1.5.1
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kkdai/bstream v1.0.0 // indirect
 	github.com/klauspost/compress v1.16.0 // indirect
