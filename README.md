@@ -7,28 +7,28 @@ Federated Lightning Address Server (with NIP57 Zap support)
 ## How to run
 
 1. Download the binary from the releases page (or compile with `go build` or if you want to compile for another system ,like a linux webserver:   `env GOOS=linux GOARCH=amd64 go build`   )
-2. Set the following environment variables somehow (using example values from bitmia.com):
+2. Set the following environment variables by placing a .env file in the folder or copy .env.example and adjust it to your needs
 
 > The Nostr private key in the parameters should be in bench32 format (`nsec..`) and it should be a new one. It is needed to sign messages only, so does not need to be your main account key.
 
 (`GET_NOSTR_PROFILE`) is still experimental and should be left on false in case it causes errors. The idea is to provide the Nostr Profile picture to wallets that support it.
 
 ```
-PORT=17422
-DOMAIN=bitmia.com
-SECRET=askdbasjdhvakjvsdjasd
-SITE_OWNER_URL=https://t.me/qecez
-SITE_OWNER_NAME=@qecez
-SITE_NAME=Bitmia
-NOSTR_PRIVATE_KEY=nsec213....
-FORWARD_URL=https://thepageyouwanttoshowasmainpage.com
+HOST="0.0.0.0"
+PORT=17423
+DOMAIN="yourdomain.org"
+SECRET="69420"
+SITE_OWNER_NAME="yourname"
+SITE_OWNER_URL="http://yourdomain.org"
+SITE_NAME="@yourname"
+NOSTR_PRIVATE_KEY="nsec123"
+FORWARD_URL="/somepageyouwanttoshowdontuseoptionifnone"
 NIP05=true
 GET_NOSTR_PROFILE=false
 ```
 
 3. Start the app with `./satdress` or `nohup ./satdress &` for a background task
-4. If you don't know how to set env you can put the above parameters in your commandline before `./satdress` 
-5. Serve the app to the world on your domain using whatever technique you're used to
+4. Serve the app to the world on your domain using whatever technique you're used to
 
 ## Multiple domains
 
