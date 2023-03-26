@@ -11,98 +11,11 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	decodepay "github.com/nbd-wtf/ln-decodepay"
 	"github.com/tidwall/gjson"
 )
-
-var (
-	TorProxyURL = "socks5://127.0.0.1:9050"
-	Client      = &http.Client{
-		Timeout: 25 * time.Second,
-	}
-)
-
-type LNParams struct {
-	Backend     BackendParams
-	Msatoshi    int64
-	Description string
-
-	// setting this to true will cause .Description to be hashed and used as
-	// the description_hash (h) field on the bolt11 invoice
-	UseDescriptionHash bool
-
-	Label string // only used for c-lightning
-}
-
-type CommandoParams struct {
-	Rune   string
-	Host   string
-	NodeId string
-}
-
-func (l CommandoParams) getCert() string { return "" }
-func (l CommandoParams) isTor() bool     { return strings.Contains(l.Host, ".onion") }
-
-type SparkoParams struct {
-	Cert string
-	Host string
-	Key  string
-}
-
-func (l SparkoParams) getCert() string { return l.Cert }
-func (l SparkoParams) isTor() bool     { return strings.Contains(l.Host, ".onion") }
-
-type LNDParams struct {
-	Cert     string
-	Host     string
-	Macaroon string
-}
-
-func (l LNDParams) getCert() string { return l.Cert }
-func (l LNDParams) isTor() bool     { return strings.Contains(l.Host, ".onion") }
-
-type LNBitsParams struct {
-	Cert string
-	Host string
-	Key  string
-}
-
-func (l LNBitsParams) getCert() string { return l.Cert }
-func (l LNBitsParams) isTor() bool     { return strings.Contains(l.Host, ".onion") }
-
-type LNPayParams struct {
-	PublicAccessKey  string
-	WalletInvoiceKey string
-}
-
-func (l LNPayParams) getCert() string { return "" }
-func (l LNPayParams) isTor() bool     { return false }
-
-type EclairParams struct {
-	Host     string
-	Password string
-	Cert     string
-}
-
-func (l EclairParams) getCert() string { return l.Cert }
-func (l EclairParams) isTor() bool     { return strings.Contains(l.Host, ".onion") }
-
-type StrikeParams struct {
-	Key      string
-	Username string
-	Currency string
-}
-
-func (l StrikeParams) getCert() string { return "" }
-func (l StrikeParams) isTor() bool     { return false }
-
-type BackendParams interface {
-	getCert() string
-	isTor() bool
-}
 
 func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params) {
 	// Check for a minute if invoice is paid

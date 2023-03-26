@@ -36,6 +36,7 @@ type Settings struct {
 	GetNostrProfile    bool   `envconfig:"GET_NOSTR_PROFILE" required:"false" default:"false"`
 	ForceMigrate       bool   `envconfig:"FORCE_MIGRATE"  default:"false"`
 	TorProxyURL        string `envconfig:"TOR_PROXY_URL"`
+	LNDprivateOnly     bool   `envconfig:"LND_PRIVATE_ONLY" required:"false" default:"false"`
 }
 
 var (
