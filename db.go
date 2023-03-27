@@ -24,10 +24,13 @@ type Params struct {
 	NodeId string `json:"nodeid"`
 	Rune   string `json:"rune"`
 
-	Pin         string `json:"pin"`
-	MinSendable string `json:"minSendable"`
-	MaxSendable string `json:"maxSendable"`
-	Npub        string `json:"npub"`
+	Pin              string `json:"pin"`
+	MinSendable      string `json:"minSendable"`
+	MaxSendable      string `json:"maxSendable"`
+	Npub             string `json:"npub"`
+	NotifyZaps       bool   `json:"notifyzaps"`
+	NotifyZapComment bool   `json:"notifycomments"`
+	NotifyNonZap     bool   `json:"notifynonzaps"`
 }
 
 func SaveName(

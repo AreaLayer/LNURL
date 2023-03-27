@@ -70,7 +70,7 @@
                 class="input full-width"
                 name="host"
                 id="host"
-                placeholder="https://walletofsatoshi.com/.well-known/lnurlp/ninthtractor31"
+                placeholder="https://walletofsatoshi.com/.well-known/lnurlp/satoshinakamoto58k"
               />
             </div>
            
@@ -190,6 +190,24 @@
               id="npub"
               placeholder="npub123..."
             />
+            <div class="field">
+              <label style="float: right">
+                Get notifed on Nostr</label>
+                <label style="float: left">
+                Zaps with Comments
+                <input type="checkbox" id="notifycomments" name="notifycomments" v-model="notifycomments" checked />
+             </label>
+             <label style="float: left">
+              Zaps without Comments
+              <input type="checkbox" id="notifyzaps" name="notifyzaps" v-model="notifyzaps" checked />
+            </label>
+              <label style="float: left">
+                Non Zaps
+                <input type="checkbox" id="notifynonzaps" name="notifynonzaps" v-model="notifynonzaps" checked/>
+              </label>
+             
+              </label>
+            </div>
           </div>
           <button class="submit">Submit</button>
         </form>

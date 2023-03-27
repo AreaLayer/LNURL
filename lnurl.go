@@ -51,6 +51,7 @@ type LNURLPayValuesCustom struct {
 	Nip57Receipt       nostr.Event          `json:"nip57Receipt"`
 	Nip57ReceiptRelays []string             `json:"nip57ReceiptRelays"`
 	AwaitInvoicePaid   bool                 `json:"awaitInvoicePaid"`
+	Sender             string               `json:"sender"`
 }
 
 func handleLNURL(w http.ResponseWriter, r *http.Request) {
@@ -143,6 +144,7 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var comment = ""
+		var payerData lnurl.PayerDataValues
 		// nostr NIP-57
 		// the "nostr" query param has a zap request which is a nostr event
 		// that specifies which nostr note has been zapped.
@@ -172,8 +174,9 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 			}
 
 		}
+		//We can't handle comments and payerdata in NIP57 at the same time...
 
-		//If a comment is send with the Invoice, always use it (?)
+		// If a comment is send with the Invoice, always use it (?)
 		regularcomment := r.FormValue("comment")
 		if len(regularcomment) > CommentAllowed {
 			log.Error().Err(err).Str("Comment is too long", err.Error())
@@ -185,7 +188,7 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 		}
 		// payer data, not used currently
 		payerdata := r.FormValue("payerdata")
-		var payerData lnurl.PayerDataValues
+
 		if len(payerdata) > 0 {
 			err = json.Unmarshal([]byte(payerdata), &payerData)
 			if err != nil {
@@ -213,6 +216,18 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 		//in order to submit the zap on nostr
 		if allowNostr && payvaluescustom.AwaitInvoicePaid {
 			go WaitForInvoicePaid(payvaluescustom, params)
+		} else if params.Npub != "" && params.NotifyNonZap {
+			var amount = payvaluescustom.ParsedInvoice.MSatoshi / 1000
+			var satsr = "Sats"
+			if amount == 1 {
+				satsr = "Sat"
+			}
+			if payvaluescustom.Comment != "" {
+				go sendMessage(params.Npub, "Received Non-Zap! Amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️. Comment: "+payvaluescustom.Comment)
+
+			} else {
+				go sendMessage(params.Npub, "Received Non-Zap! Amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️.")
+			}
 		}
 	}
 }
@@ -231,6 +246,7 @@ func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, a
 	// NIP57 ZAPs
 	// for nip57 use the nostr event as the descriptionHash
 	if zapEvent.Sig != "" {
+
 		// we calculate the descriptionHash here, create an invoice with it
 		// and store the invoice in the zap receipt later down the line
 		zapEventSerialized, err := json.Marshal(zapEvent)
@@ -265,11 +281,16 @@ func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, a
 
 	//Check invoice paid only if we actually have a NIP57 event
 	var awaitPaid = false
+	var sender = ""
 	// nip57 - we need to store the newly created invoice in the zap receipt
 	if zapEvent.Sig != "" {
 		nip57Receipt = CreateNostrReceipt(zapEvent, invoice)
 		awaitPaid = true
+		sender = "@" + EncodeBench32Public(zapEvent.PubKey)
+		log.Debug().Str("Zap from", sender).Msg("Nostr")
 	}
+
+	//var sender = zapEvent.Tags.GetFirst([]string{"pubkey"})
 
 	decoded_invoice, _ := decodepay.Decodepay(invoice)
 	return LNURLPayValuesCustom{
@@ -284,6 +305,7 @@ func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, a
 		Nip57Receipt:       nip57Receipt,
 		Nip57ReceiptRelays: nip57ReceiptRelays,
 		AwaitInvoicePaid:   awaitPaid,
+		Sender:             sender,
 	}, nil
 
 }

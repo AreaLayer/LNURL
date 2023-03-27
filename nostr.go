@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/nbd-wtf/go-nostr"
+	"github.com/nbd-wtf/go-nostr/nip04"
 	"github.com/nbd-wtf/go-nostr/nip19"
 )
 
@@ -38,12 +39,67 @@ func Nip57DescriptionHash(zapEventSerialized string) string {
 
 func DecodeBench32(key string) string {
 	if _, v, err := nip19.Decode(key); err == nil {
-		privatekeyhex := v.(string)
-		nostrPrivkeyHex = privatekeyhex
-		return nostrPrivkeyHex
+		return v.(string)
 	}
 	return key
 
+}
+
+func EncodeBench32Public(key string) string {
+	if v, err := nip19.EncodePublicKey(key); err == nil {
+		return v
+	}
+	return key
+}
+
+func EncodeBench32Private(key string) string {
+	if v, err := nip19.EncodePrivateKey(key); err == nil {
+		return v
+	}
+	return key
+}
+
+func sendMessage(receiverKey string, message string) {
+
+	var relays []string
+	var tags nostr.Tags
+	reckey := DecodeBench32(receiverKey)
+	tags = append(tags, nostr.Tag{"p", reckey})
+
+	//references, err := optSlice(opts, "--reference")
+	//if err != nil {
+	//	return
+	//}
+	//for _, ref := range references {
+	//tags = append(tags, nostr.Tag{"e", reckey})
+	//}
+
+	// parse and encrypt content
+	privkeyhex := DecodeBench32(s.NostrPrivateKey)
+	pubkey, _ := nostr.GetPublicKey(privkeyhex)
+
+	sharedSecret, err := nip04.ComputeSharedSecret(reckey, privkeyhex)
+	if err != nil {
+		log.Printf("Error computing shared key: %s. x\n", err.Error())
+		return
+	}
+
+	encryptedMessage, err := nip04.Encrypt(message, sharedSecret)
+	if err != nil {
+		log.Printf("Error encrypting message: %s. \n", err.Error())
+		return
+	}
+
+	event := nostr.Event{
+		PubKey:    pubkey,
+		CreatedAt: time.Now(),
+		Kind:      nostr.KindEncryptedDirectMessage,
+		Tags:      tags,
+		Content:   encryptedMessage,
+	}
+	event.Sign(privkeyhex)
+	publishNostrEvent(event, relays)
+	log.Printf("%+v\n", event)
 }
 
 func handleNip05(w http.ResponseWriter, r *http.Request) {
@@ -57,8 +113,9 @@ func handleNip05(w http.ResponseWriter, r *http.Request) {
 	var middlestring = ""
 
 	for _, user := range allusers {
+		nostrnpubHex := DecodeBench32(user.Npub)
 		if user.Npub != "" { //do some more validation checks
-			middlestring = middlestring + "\t\"" + user.Name + "\"" + ": " + "\"" + DecodeBench32(user.Npub) + "\"" + ",\n"
+			middlestring = middlestring + "\t\"" + user.Name + "\"" + ": " + "\"" + nostrnpubHex + "\"" + ",\n"
 		}
 	}
 
@@ -131,9 +188,7 @@ func GetNostrProfileMetaData(npub string) (nostr.ProfileMetadata, error) {
 }
 
 func publishNostrEvent(ev nostr.Event, relays []string) {
-	pk := s.NostrPrivateKey
-	ev.Sign(pk)
-	log.Debug().Str("publishing nostr event %s", ev.ID)
+
 	// more relays
 	relays = append(relays, "wss://relay.nostr.ch", "wss://eden.nostr.land", "wss://nostr.btcmp.com", "wss://nostr.relayer.se", "wss://relay.current.fyi", "wss://nos.lol", "wss://nostr.mom", "wss://relay.nostr.info", "wss://nostr.zebedee.cloud", "wss://nostr-pub.wellorder.net", "wss://relay.snort.social/", "wss://relay.damus.io/", "wss://nostr.oxtr.dev/", "wss://nostr.fmt.wiz.biz/", "wss://brb.io")
 	// remove trailing /
@@ -141,18 +196,21 @@ func publishNostrEvent(ev nostr.Event, relays []string) {
 	// unique relays
 	relays = uniqueSlice(relays)
 
+	ev.Sign(s.NostrPrivateKey)
+
+	//log.Printf("publishing nostr event %s", ev.ID)
 	// publish the event to relays
 	for _, url := range relays {
 		go func(url string) {
-			// remove trailing /
-			relay, e := nostr.RelayConnect(context.Background(), url)
+			ctx := context.WithValue(context.Background(), "url", url)
+			relay, e := nostr.RelayConnect(ctx, url)
 			if e != nil {
 				log.Error().Str(e.Error(), e.Error())
 				return
 			}
 			time.Sleep(3 * time.Second)
 
-			status := relay.Publish(context.Background(), ev)
+			status := relay.Publish(ctx, ev)
 			log.Info().Str("[NOSTR] published to %s:", status.String())
 
 			time.Sleep(3 * time.Second)

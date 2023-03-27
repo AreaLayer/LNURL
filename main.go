@@ -25,18 +25,20 @@ type Settings struct {
 	Domain string `envconfig:"DOMAIN" required:"true"`
 	// GlobalUsers means that user@ part is globally unique across all domains
 	// WARNING: if you toggle this existing users won't work anymore for safety reasons!
-	GlobalUsers        bool   `envconfig:"GLOBAL_USERS" default:"false"`
-	Secret             string `envconfig:"SECRET" required:"true"`
-	SiteOwnerName      string `envconfig:"SITE_OWNER_NAME" required:"true"`
-	SiteOwnerURL       string `envconfig:"SITE_OWNER_URL" required:"true"`
-	SiteName           string `envconfig:"SITE_NAME" required:"true"`
-	NostrPrivateKey    string `envconfig:"NOSTR_PRIVATE_KEY" required:"false" default:""`
-	ForwardMainPageUrl string `envconfig:"FORWARD_URL" required:"false"`
-	Nip05              bool   `envconfig:"NIP05" default:"false" required:"false"`
-	GetNostrProfile    bool   `envconfig:"GET_NOSTR_PROFILE" required:"false" default:"false"`
-	ForceMigrate       bool   `envconfig:"FORCE_MIGRATE"  default:"false"`
-	TorProxyURL        string `envconfig:"TOR_PROXY_URL"`
-	LNDprivateOnly     bool   `envconfig:"LND_PRIVATE_ONLY" required:"false" default:"false"`
+	GlobalUsers                 bool   `envconfig:"GLOBAL_USERS" default:"false"`
+	Secret                      string `envconfig:"SECRET" required:"true"`
+	SiteOwnerName               string `envconfig:"SITE_OWNER_NAME" required:"true"`
+	SiteOwnerURL                string `envconfig:"SITE_OWNER_URL" required:"true"`
+	SiteName                    string `envconfig:"SITE_NAME" required:"true"`
+	NostrPrivateKey             string `envconfig:"NOSTR_PRIVATE_KEY" required:"false" default:""`
+	ForwardMainPageUrl          string `envconfig:"FORWARD_URL" required:"false"`
+	Nip05                       bool   `envconfig:"NIP05" default:"false" required:"false"`
+	GetNostrProfile             bool   `envconfig:"GET_NOSTR_PROFILE" required:"false" default:"false"`
+	ForceMigrate                bool   `envconfig:"FORCE_MIGRATE"  default:"false"`
+	TorProxyURL                 string `envconfig:"TOR_PROXY_URL"`
+	NotifyNostrUsersCommentOnly bool   `envconfig:"NOTIFY_NOSTR_USERS_COMMENT" required:"false" default:"false"`
+	NotifyNostrUsers            bool   `envconfig:"NOTIFY_NOSTR_USERS" required:"false" default:"false"`
+	LNDprivateOnly              bool   `envconfig:"LND_PRIVATE_ONLY" required:"false" default:"false"`
 }
 
 var (
@@ -128,15 +130,34 @@ func main() {
 				}
 			}
 
+			r.ParseForm()
+			v1 := r.FormValue("notifyzaps")
+			var notifyZaps = false
+			if v1 == "on" {
+				notifyZaps = true
+			}
+			v2 := r.FormValue("notifycomments")
+			var notifyComments = false
+			if v2 == "on" {
+				notifyComments = true
+			}
+			v3 := r.FormValue("notifynonzaps")
+			var notifyNonZaps = false
+			if v3 == "on" {
+				notifyNonZaps = true
+			}
 			pin, inv, err := SaveName(name, domain, &Params{
-				Kind:   r.FormValue("kind"),
-				Host:   r.FormValue("host"),
-				Key:    r.FormValue("key"),
-				Pak:    r.FormValue("pak"),
-				Waki:   r.FormValue("waki"),
-				NodeId: r.FormValue("nodeid"),
-				Rune:   r.FormValue("rune"),
-				Npub:   r.FormValue("npub"),
+				Kind:             r.FormValue("kind"),
+				Host:             r.FormValue("host"),
+				Key:              r.FormValue("key"),
+				Pak:              r.FormValue("pak"),
+				Waki:             r.FormValue("waki"),
+				NodeId:           r.FormValue("nodeid"),
+				Rune:             r.FormValue("rune"),
+				Npub:             r.FormValue("npub"),
+				NotifyZaps:       notifyZaps,
+				NotifyZapComment: notifyComments,
+				NotifyNonZap:     notifyNonZaps,
 			}, r.FormValue("pin"), false, "")
 			if err != nil {
 				w.WriteHeader(500)

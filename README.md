@@ -33,7 +33,6 @@ NOSTR_PRIVATE_KEY="nsec123"
 FORWARD_URL="/"
 NIP05=true
 GET_NOSTR_PROFILE=false
-LND_PRIVATE_ONLY=false
 ```
 
 3. Start the app with `./satdress` or `nohup ./satdress &` for a background task
@@ -58,7 +57,8 @@ Maybe ask for help on https://t.me/lnurl if you're in trouble.
 ## Status of the Fork:
 - NIP57 for Nostr ("Zaps") work when using an LNBits or LND backend, other backends (sparko, lnpay, eclair, commando) still need verification of payments in waitforinvoice.go by API calls in order to sign the zap on Nostr. (Help appreciated, because I can't test them)
 - NIP05 support: If user added a npub, they can use lnaddress for Nostr NIP05 verificaton
-- Downloads Profile pictures when given npub key (for supported wallets, e.g. blue wallet)
+- Acts as a Bot that sends Nostr messages to users when they receive a LN Payment (if set in options for Zaps with/without comments and non Zaps (lnaddress payments))
+- Downloads Profile pictures when given npub key (for supported wallets, e.g. blue wallet) and GET_NOSTR_PROFILE=true
 - Addded possibility to forward lightning addresses to existing ones (e.g. Wallet of Satoshi)
 - Added possibility to add a forward main page, go to /lnaddress to add new users
 - Added an alternative API '/api/easy' that deletes users and creates new name and pin for them
