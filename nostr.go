@@ -59,6 +59,13 @@ func EncodeBench32Private(key string) string {
 	return key
 }
 
+func EncodeBench32Note(key string) string {
+	if v, err := nip19.EncodeNote(key); err == nil {
+		return v
+	}
+	return key
+}
+
 func sendMessage(receiverKey string, message string) {
 
 	var relays []string

@@ -52,6 +52,7 @@ type LNURLPayValuesCustom struct {
 	Nip57ReceiptRelays []string             `json:"nip57ReceiptRelays"`
 	AwaitInvoicePaid   bool                 `json:"awaitInvoicePaid"`
 	Sender             string               `json:"sender"`
+	Note               string               `json:"note"`
 }
 
 func handleLNURL(w http.ResponseWriter, r *http.Request) {
@@ -282,11 +283,15 @@ func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, a
 	//Check invoice paid only if we actually have a NIP57 event
 	var awaitPaid = false
 	var sender = ""
+	var note = ""
 	// nip57 - we need to store the newly created invoice in the zap receipt
 	if zapEvent.Sig != "" {
 		nip57Receipt = CreateNostrReceipt(zapEvent, invoice)
 		awaitPaid = true
 		sender = "@" + EncodeBench32Public(zapEvent.PubKey)
+		if zapEvent.Tags.GetFirst([]string{"e"}) != nil {
+			note = "@" + EncodeBench32Note(zapEvent.Tags.GetFirst([]string{"e"}).Value())
+		}
 		log.Debug().Str("Zap from", sender).Msg("Nostr")
 	}
 
@@ -306,6 +311,7 @@ func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, a
 		Nip57ReceiptRelays: nip57ReceiptRelays,
 		AwaitInvoicePaid:   awaitPaid,
 		Sender:             sender,
+		Note:               note,
 	}, nil
 
 }
