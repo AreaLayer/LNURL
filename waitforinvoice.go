@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"time"
 
+	lightning "github.com/fiatjaf/lightningd-gjson-rpc"
+	lnsocket "github.com/jb55/lnsocket/go"
 	decodepay "github.com/nbd-wtf/ln-decodepay"
 	"github.com/tidwall/gjson"
 )
@@ -155,11 +157,81 @@ func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params) {
 				case EclairParams:
 					//TODO
 				case SparkoParams:
-					//TODO
-				case CommandoParams:
-					//TODO
+					spark := &lightning.Client{
+						SparkURL:    backend.Host,
+						SparkToken:  backend.Key,
+						CallTimeout: time.Second * 3,
+					}
 
+					paymentHash := bolt11.PaymentHash
+
+					// Call listinvoices with the "payment_hash" parameter set to the specified payment hash
+					params := map[string]interface{}{
+						"payment_hash": paymentHash,
+					}
+					response, _ := spark.Call("listinvoices", params)
+
+					// Check the status of the invoice
+					invoices := response.Get("invoices").Array()
+					if len(invoices) > 0 {
+						invoice := invoices[0]
+						if invoice.Get("status").String() == "paid" {
+							payvalues.PaidAt = time.Now()
+							payvalues.Paid = true
+						}
+					}
+
+				case CommandoParams:
+					type Invoice struct {
+						Label                string `json:"label,omitempty"`
+						PaymentHash          string `json:"payment_hash"`
+						MilliSatoshi         int64  `json:"msatoshi"`
+						Status               string `json:"status"`
+						PayIndex             uint64 `json:"pay_index,omitempty"`
+						MilliSatoshiReceived uint64 `json:"msatoshi_received,omitempty"`
+						PaidAt               int64  `json:"paid_at,omitempty"`
+						ExpiresAt            int64  `json:"expires_at"`
+						Bolt11               string `json:"bolt11`
+					}
+					ln := lnsocket.LNSocket{}
+					ln.GenKey()
+
+					err := ln.ConnectAndInit(backend.Host, backend.NodeId)
+					if err != nil {
+						return
+					}
+					defer ln.Disconnect()
+
+					invoiceParams := map[string]interface{}{
+						"payment_hash": bolt11.PaymentHash,
+					}
+					jparams, _ := json.Marshal(invoiceParams)
+
+					// Call the listinvoices RPC command to retrieve invoice details
+					result, err := ln.Rpc(backend.Rune, "listinvoices", string(jparams))
+					if err != nil {
+						fmt.Println("Error getting invoice:", err)
+						return
+					}
+
+					var invoices []Invoice
+					err = json.Unmarshal([]byte(result), &invoices)
+					if err != nil {
+						fmt.Println("Error parsing listinvoices response:", err)
+						return
+					}
+					if len(invoices) > 0 {
+						for _, invoice := range invoices {
+							if invoice.Status == "paid" {
+								payvalues.PaidAt = time.Now()
+								payvalues.Paid = true
+								break
+							}
+
+						}
+					}
 				}
+
 				//Timeout waiting for payment after maxiterations
 				if maxiterations == 0 {
 					log.Debug().Str("NIP57 wait for payment", bolt11.PaymentHash).Msg("Timed out")
