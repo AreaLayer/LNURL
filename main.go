@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"path"
 
 	"github.com/cockroachdb/pebble"
 	"github.com/fiatjaf/makeinvoice"
@@ -23,6 +24,7 @@ type Settings struct {
 	Host   string `envconfig:"HOST" default:"0.0.0.0"`
 	Port   string `envconfig:"PORT" required:"true"`
 	Domain string `envconfig:"DOMAIN" required:"true"`
+	DBDirectory                 string `envconfig:"DB_DIR" required:"false" default:""`
 	// GlobalUsers means that user@ part is globally unique across all domains
 	// WARNING: if you toggle this existing users won't work anymore for safety reasons!
 	GlobalUsers                 bool   `envconfig:"GLOBAL_USERS" default:"false"`
@@ -74,7 +76,7 @@ func main() {
 		makeinvoice.TorProxyURL = s.TorProxyURL
 	}
 
-	dbName := fmt.Sprintf("%v-multiple.db", s.SiteName)
+	dbName := path.Join(s.DBDirectory,fmt.Sprintf("%v-multiple.db", s.SiteName))
 	if _, err := os.Stat(dbName); os.IsNotExist(err) || s.ForceMigrate {
 		for _, one := range getDomains(s.Domain) {
 			tryMigrate(one, dbName)
