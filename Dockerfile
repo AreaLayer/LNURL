@@ -1,15 +1,17 @@
-FROM golang:1.16.0-alpine AS builder
+FROM golang:1.20-alpine AS builder
 
 WORKDIR /opt/buid
 
 COPY ./*.go ./*.html ./go.mod ./go.sum ./
 COPY static ./static
 
-RUN apk add gcc musl-dev linux-headers
+RUN apk update && \
+    apk upgrade --available && \
+    apk add gcc musl-dev linux-headers
 RUN go get
 RUN go build
 
-FROM alpine:3.14
+FROM alpine:3.17
 
 ENV PORT=17422
 ENV DOMAIN=satdress.com
