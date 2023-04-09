@@ -195,6 +195,9 @@ func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params) {
 									go sendMessage(params.Npub, "Received Profile Zap from "+payvalues.Sender+" with amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️.")
 								}
 							}
+							log.Debug().Str("ZAPPED ⚡️", "Published zap on Nostr").Msg("Nostr")
+							close(quit)
+							return
 
 						}
 					} else if params.Npub != "" && params.NotifyNonZap {
@@ -209,15 +212,15 @@ func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params) {
 						} else {
 							go sendMessage(params.Npub, "Received Non-Zap! Amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️.")
 						}
+						log.Debug().Str("ZAPPED ⚡️", "Published zap on Nostr").Msg("Nostr")
+						close(quit)
+						return
 
 					}
 
-					log.Debug().Str("ZAPPED ⚡️", "Published zap on Nostr").Msg("Nostr")
-					close(quit)
-					return
-
-					maxiterations--
 				}
+				maxiterations--
+
 			case <-quit:
 				ticker.Stop()
 				return
