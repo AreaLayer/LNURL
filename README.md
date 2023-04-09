@@ -33,7 +33,7 @@ NIP05=true
 GET_NOSTR_PROFILE=false
 ```
 
-3. Start the app with `./satdress` or `nohup ./satdress &` for a background task
+3. Start the app with `./nostdress` or `nohup ./nostdress &` for a background task
 4. Serve the app to the world on your domain using whatever technique you're used to
 
 ## Multiple domains
@@ -47,11 +47,6 @@ If you come from an old installation everything should get migrated in a seamles
 There is also a `GLOBAL_USERS` to make sure the user@ part is unique across all domains. But be warned that when enabling
 this option, existing users won't work anymore (which is by design).
 
-## Get help
-
-Maybe ask for help on https://t.me/lnurl if you're in trouble.
-
-
 ## Status of the Fork:
 - NIP57 for Nostr ("Zaps") work when using an LNBits or LND backend, other backends (sparko, lnpay, eclair, commando) still need verification of payments in waitforinvoice.go by API calls in order to sign the zap on Nostr. (Help appreciated, because I can't test them)
 - NIP05 support: If user added a npub, they can use lnaddress for Nostr NIP05 verificaton
@@ -62,7 +57,3 @@ Maybe ask for help on https://t.me/lnurl if you're in trouble.
 - Added an alternative API '/api/easy' that deletes users and creates new name and pin for them
 - Code needs some refactoring
 - Needs proper testing (especially in multi-user environment)
-- Credit for the inspiration by LightningTipBot code from @calle
-https://github.com/LightningTipBot/LightningTipBot
-
-Download latest Release https://github.com/believethehype/satdress/releases/latest
