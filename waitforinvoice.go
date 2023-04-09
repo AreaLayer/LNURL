@@ -182,14 +182,14 @@ func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params) {
 
 							if params.Npub != "" && params.NotifyZapComment && payvalues.Comment != "" {
 								if payvalues.Note != "" {
-									go sendMessage(params.Npub, "Received Zap from "+payvalues.Sender+" with amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️ for note "+payvalues.Note+". Comment: "+payvalues.Comment)
+									go sendMessage(params.Npub, "Received Zap from "+payvalues.Sender+" with amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️ for note: "+payvalues.Note+" Comment: "+payvalues.Comment)
 
 								} else {
 									go sendMessage(params.Npub, "Received Profile Zap from "+payvalues.Sender+" with amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️. Comment: "+payvalues.Comment)
 								}
 							} else if params.Npub != "" && params.NotifyZaps {
 								if payvalues.Note != "" {
-									go sendMessage(params.Npub, "Received Zap from "+payvalues.Sender+" with amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️ for note "+payvalues.Note+".")
+									go sendMessage(params.Npub, "Received Zap from "+payvalues.Sender+" with amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️ for note: "+payvalues.Note)
 
 								} else {
 									go sendMessage(params.Npub, "Received Profile Zap from "+payvalues.Sender+" with amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️.")
