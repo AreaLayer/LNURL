@@ -169,34 +169,52 @@ func WaitForInvoicePaid(payvalues LNURLPayValuesCustom, params *Params) {
 				//If invoice is paid and DescriptionHash matches Nip57 DescriptionHash, publish Zap Nostr Event. This is rather a sanity check.
 				if payvalues.Paid {
 					var amount = bolt11.MSatoshi / 1000
-					var descriptionTag = *payvalues.Nip57Receipt.Tags.GetFirst([]string{"description"})
-					if bolt11.DescriptionHash == Nip57DescriptionHash(descriptionTag.Value()) {
-						publishNostrEvent(payvalues.Nip57Receipt, payvalues.Nip57ReceiptRelays)
+
+					if *&payvalues.Nip57Receipt.Tags != nil {
+						var descriptionTag = *payvalues.Nip57Receipt.Tags.GetFirst([]string{"description"})
+
+						if bolt11.DescriptionHash == Nip57DescriptionHash(descriptionTag.Value()) {
+							publishNostrEvent(payvalues.Nip57Receipt, payvalues.Nip57ReceiptRelays)
+							var satsr = "Sats"
+							if amount == 1 {
+								satsr = "Sat"
+							}
+
+							if params.Npub != "" && params.NotifyZapComment && payvalues.Comment != "" {
+								if payvalues.Note != "" {
+									go sendMessage(params.Npub, "Received Zap from "+payvalues.Sender+" with amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️ for note "+payvalues.Note+". Comment: "+payvalues.Comment)
+
+								} else {
+									go sendMessage(params.Npub, "Received Profile Zap from "+payvalues.Sender+" with amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️. Comment: "+payvalues.Comment)
+								}
+							} else if params.Npub != "" && params.NotifyZaps {
+								if payvalues.Note != "" {
+									go sendMessage(params.Npub, "Received Zap from "+payvalues.Sender+" with amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️ for note "+payvalues.Note+".")
+
+								} else {
+									go sendMessage(params.Npub, "Received Profile Zap from "+payvalues.Sender+" with amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️.")
+								}
+							}
+
+						}
+					} else if params.Npub != "" && params.NotifyNonZap {
+						var amount = payvalues.ParsedInvoice.MSatoshi / 1000
 						var satsr = "Sats"
 						if amount == 1 {
 							satsr = "Sat"
 						}
+						if payvalues.Comment != "" {
+							go sendMessage(params.Npub, "Received Non-Zap! Amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️. Comment: "+payvalues.Comment)
 
-						if params.Npub != "" && params.NotifyZapComment && payvalues.Comment != "" {
-							if payvalues.Note != "" {
-								go sendMessage(params.Npub, "Received Zap from "+payvalues.Sender+" with amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️ for note "+payvalues.Note+". Comment: "+payvalues.Comment)
-
-							} else {
-								go sendMessage(params.Npub, "Received Profile Zap from "+payvalues.Sender+" with amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️. Comment: "+payvalues.Comment)
-							}
-						} else if params.Npub != "" && params.NotifyZaps {
-							if payvalues.Note != "" {
-								go sendMessage(params.Npub, "Received Zap from "+payvalues.Sender+" with amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️ for note "+payvalues.Note+".")
-
-							} else {
-								go sendMessage(params.Npub, "Received Profile Zap from "+payvalues.Sender+" with amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️.")
-							}
+						} else {
+							go sendMessage(params.Npub, "Received Non-Zap! Amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️.")
 						}
 
-						log.Debug().Str("ZAPPED ⚡️", "Published zap on Nostr").Msg("Nostr")
-						close(quit)
-						return
 					}
+
+					log.Debug().Str("ZAPPED ⚡️", "Published zap on Nostr").Msg("Nostr")
+					close(quit)
+					return
 
 					maxiterations--
 				}

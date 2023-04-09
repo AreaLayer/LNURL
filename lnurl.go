@@ -215,20 +215,9 @@ func handleLNURL(w http.ResponseWriter, r *http.Request) {
 
 		//if we provided a nsec and the response contained zap information, we wait for the invoice to be paid
 		//in order to submit the zap on nostr
-		if allowNostr && payvaluescustom.AwaitInvoicePaid {
+		//also check for invoice paid for regular ln payments for nostr notificaitons
+		if payvaluescustom.AwaitInvoicePaid {
 			go WaitForInvoicePaid(payvaluescustom, params)
-		} else if params.Npub != "" && params.NotifyNonZap {
-			var amount = payvaluescustom.ParsedInvoice.MSatoshi / 1000
-			var satsr = "Sats"
-			if amount == 1 {
-				satsr = "Sat"
-			}
-			if payvaluescustom.Comment != "" {
-				go sendMessage(params.Npub, "Received Non-Zap! Amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️. Comment: "+payvaluescustom.Comment)
-
-			} else {
-				go sendMessage(params.Npub, "Received Non-Zap! Amount: "+strconv.FormatInt(amount, 10)+" "+satsr+" ⚡️.")
-			}
 		}
 	}
 }
@@ -281,13 +270,12 @@ func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, a
 	}
 
 	//Check invoice paid only if we actually have a NIP57 event
-	var awaitPaid = false
+	var awaitPaid = true
 	var sender = ""
 	var note = ""
 	// nip57 - we need to store the newly created invoice in the zap receipt
 	if zapEvent.Sig != "" {
 		nip57Receipt = CreateNostrReceipt(zapEvent, invoice)
-		awaitPaid = true
 		sender = "@" + EncodeBench32Public(zapEvent.PubKey)
 		if zapEvent.Tags.GetFirst([]string{"e"}) != nil {
 			note = "@" + EncodeBench32Note(zapEvent.Tags.GetFirst([]string{"e"}).Value())
