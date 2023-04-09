@@ -1,4 +1,4 @@
-module github.com/nbd-wtf/satdress
+module github.com/believethehype/nostdress
 
 go 1.19
 

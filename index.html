@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <title>Satdress - Federated Lightning Address Server</title>
+    <title>Nostdress - Federated Lightning Address Server with Nostr Support</title>
     <meta charset="utf-8" />
     <link rel="icon" type="image/png" href="https://i.imgur.com/4yaPtA2.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -13,9 +13,14 @@
     <link rel="stylesheet" href="/static/style.css" />
   </head>
   <body>
+
     <main id="main">
+
       <div class="title">{{ siteName }}</div>
-      <div class="tagline">Federated Lightning Address Server</div>
+      <script>
+    
+      </script>
+      <div class="tagline">Federated Lightning Address Server with Nostr support</div>
       <div class="owner">
         <a class="owner-button" :href="siteOwnerURL" target="_blank">
           Brought to you by <span class="owner-name">{{ siteOwnerName }}</span>
@@ -190,7 +195,7 @@
               id="npub"
               placeholder="npub123..."
             />
-            <div class="field">
+            <div class="field" id="nostrnotifications" v-if="notifynostr == 'true'" >
               <label style="float: right">
                 Get notifed on Nostr</label>
                 <label style="float: left">
@@ -209,10 +214,13 @@
               </label>
             </div>
           </div>
-          <button class="submit">Submit</button>
-        </form>
+          <button class="submit" v-if="allowregistration == 'true'" >Submit</button>
+       
       </div>
-     
+      <div class="field">  <label style="float: left"  v-if="allowregistration == 'false'">
+        Registration has been deactivated by adminsitrator for this domain</label></div>
+    
+     </form>
       <div class="resources">
         <a
           class="resource-button"
@@ -224,12 +232,13 @@
         <a
           class="resource-button"
           target="_blank"
-          href="https://github.com/fiatjaf/satdress"
+          href="https://github.com/believethehype/nostdress"
         >
           Host this server on your domain!
         </a>
       </div>
     </main>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.2.2/vue.global.prod.min.js"></script>
     <script>
       const initial = {} // REPLACED WITH SERVER DATA //

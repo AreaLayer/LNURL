@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"path"
+	"strconv"
 	"strings"
 	"time"
-	"path"
 
 	"github.com/cockroachdb/pebble"
 	"github.com/fiatjaf/makeinvoice"
@@ -21,26 +22,26 @@ import (
 )
 
 type Settings struct {
-	Host   string `envconfig:"HOST" default:"0.0.0.0"`
-	Port   string `envconfig:"PORT" required:"true"`
-	Domain string `envconfig:"DOMAIN" required:"true"`
-	DBDirectory                 string `envconfig:"DB_DIR" required:"false" default:""`
+	Host        string `envconfig:"HOST" default:"0.0.0.0"`
+	Port        string `envconfig:"PORT" required:"true"`
+	Domain      string `envconfig:"DOMAIN" required:"true"`
+	DBDirectory string `envconfig:"DB_DIR" required:"false" default:""`
 	// GlobalUsers means that user@ part is globally unique across all domains
 	// WARNING: if you toggle this existing users won't work anymore for safety reasons!
-	GlobalUsers                 bool   `envconfig:"GLOBAL_USERS" default:"false"`
-	Secret                      string `envconfig:"SECRET" required:"true"`
-	SiteOwnerName               string `envconfig:"SITE_OWNER_NAME" required:"true"`
-	SiteOwnerURL                string `envconfig:"SITE_OWNER_URL" required:"true"`
-	SiteName                    string `envconfig:"SITE_NAME" required:"true"`
-	NostrPrivateKey             string `envconfig:"NOSTR_PRIVATE_KEY" required:"false" default:""`
-	ForwardMainPageUrl          string `envconfig:"FORWARD_URL" required:"false"`
-	Nip05                       bool   `envconfig:"NIP05" default:"false" required:"false"`
-	GetNostrProfile             bool   `envconfig:"GET_NOSTR_PROFILE" required:"false" default:"false"`
-	ForceMigrate                bool   `envconfig:"FORCE_MIGRATE"  default:"false"`
-	TorProxyURL                 string `envconfig:"TOR_PROXY_URL"`
-	NotifyNostrUsersCommentOnly bool   `envconfig:"NOTIFY_NOSTR_USERS_COMMENT" required:"false" default:"false"`
-	NotifyNostrUsers            bool   `envconfig:"NOTIFY_NOSTR_USERS" required:"false" default:"false"`
-	LNDprivateOnly              bool   `envconfig:"LND_PRIVATE_ONLY" required:"false" default:"false"`
+	GlobalUsers        bool   `envconfig:"GLOBAL_USERS" default:"false"`
+	Secret             string `envconfig:"SECRET" required:"true"`
+	SiteOwnerName      string `envconfig:"SITE_OWNER_NAME" required:"true"`
+	SiteOwnerURL       string `envconfig:"SITE_OWNER_URL" required:"true"`
+	SiteName           string `envconfig:"SITE_NAME" required:"true"`
+	NostrPrivateKey    string `envconfig:"NOSTR_PRIVATE_KEY" required:"false" default:""`
+	ForwardMainPageUrl string `envconfig:"FORWARD_URL" required:"false"`
+	Nip05              bool   `envconfig:"NIP05" default:"false" required:"false"`
+	GetNostrProfile    bool   `envconfig:"GET_NOSTR_PROFILE" required:"false" default:"false"`
+	ForceMigrate       bool   `envconfig:"FORCE_MIGRATE"  default:"false"`
+	TorProxyURL        string `envconfig:"TOR_PROXY_URL"`
+	NotifyNostrUsers   bool   `envconfig:"NOTIFY_NOSTR_USERS" required:"false" default:"true"`
+	AllowRegistration  bool   `envconfig:"ALLOW_REGISTRATION" required:"false" default:"true"`
+	LNDprivateOnly     bool   `envconfig:"LND_PRIVATE_ONLY" required:"false" default:"false"`
 }
 
 var (
@@ -76,7 +77,7 @@ func main() {
 		makeinvoice.TorProxyURL = s.TorProxyURL
 	}
 
-	dbName := path.Join(s.DBDirectory,fmt.Sprintf("%v-multiple.db", s.SiteName))
+	dbName := path.Join(s.DBDirectory, fmt.Sprintf("%v-multiple.db", s.SiteName))
 	if _, err := os.Stat(dbName); os.IsNotExist(err) || s.ForceMigrate {
 		for _, one := range getDomains(s.Domain) {
 			tryMigrate(one, dbName)
@@ -96,7 +97,11 @@ func main() {
 
 	router.Path("/lnaddress").HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			renderHTML(w, indexHTML, map[string]interface{}{})
+			//renderHTML(w, indexHTML, map[string]interface{}{})
+			renderHTML(w, indexHTML, struct {
+				AllowRegistration string `json:"allowregistration"`
+				NotifyNostrUsers  string `json:"notifynostr"`
+			}{strconv.FormatBool(s.AllowRegistration), strconv.FormatBool(s.NotifyNostrUsers)})
 		},
 	)
 
