@@ -17,7 +17,13 @@ New parameters in this fork:
 
 > (`FORWARD_URL`) can be left unset and satdress will work as before. If set, the main Page will be forwarded to the given url. The interface can then be accesed at domain.org/lnaddress
 
+> (`ALLOW_REGISTRATION`) Activate/Deactivate Registration from users of the website (Default true)
+
+> (`NOTIFY_NOSTR_USERS`) Allow setting to send DM notifcations to users with npub (user can opt in/out if activated)
+
 > (`LND_PRIVATE_ONLY`) should only be activated if satdress is used for a single user that relies on private LND channels only. 
+
+
 
 ```
 HOST="0.0.0.0"
