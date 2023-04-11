@@ -280,10 +280,13 @@ func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, a
 		if zapEvent.Tags.GetFirst([]string{"e"}) != nil {
 			note = "@" + EncodeBench32Note(zapEvent.Tags.GetFirst([]string{"e"}).Value())
 		}
+		if zapEvent.Tags.GetFirst([]string{"anon"}) != nil {
+			if zapEvent.Tags.GetFirst([]string{"anon"}).Value() == "" {
+				sender = "anonymous Zapper 🤙"
+			}
+		}
 		log.Debug().Str("Zap from", sender).Msg("Nostr")
 	}
-
-	//var sender = zapEvent.Tags.GetFirst([]string{"pubkey"})
 
 	decoded_invoice, _ := decodepay.Decodepay(invoice)
 	return LNURLPayValuesCustom{
