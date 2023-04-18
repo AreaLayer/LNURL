@@ -2,5 +2,6 @@
 *.swo
 *.yaml
 *.env
+*.db
 satdress
 nostdress
