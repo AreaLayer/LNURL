@@ -4,13 +4,13 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/cockroachdb/pebble"
+	jsoniter "github.com/json-iterator/go"
 )
 
 type Params struct {
@@ -77,7 +77,7 @@ func SaveName(
 	}
 
 	// save it
-	data, _ := json.Marshal(params)
+	data, _ := jsoniter.Marshal(params)
 	if err := db.Set(key, data, pebble.Sync); err != nil {
 		return "", "", err
 	}
@@ -94,7 +94,7 @@ func GetName(name, domain string) (*Params, error) {
 	defer closer.Close()
 
 	var params Params
-	if err := json.Unmarshal(val, &params); err != nil {
+	if err := jsoniter.Unmarshal(val, &params); err != nil {
 		return nil, err
 	}
 
@@ -117,7 +117,7 @@ func GetAllUsers(domain string) ([]Params, error) {
 		defer closer.Close()
 
 		var params Params
-		if err := json.Unmarshal(val, &params); err != nil {
+		if err := jsoniter.Unmarshal(val, &params); err != nil {
 			return nil, err
 		}
 		params.Domain = domain
@@ -178,7 +178,7 @@ func tryMigrate(old, new string) {
 	for iter.First(); iter.Valid(); iter.Next() {
 		log.Debug().Str("key", string(iter.Key())).Msg("Migrating key")
 		var params Params
-		if err := json.Unmarshal(iter.Value(), &params); err != nil {
+		if err := jsoniter.Unmarshal(iter.Value(), &params); err != nil {
 			log.Debug().Err(err).Msg("Unmarshal error")
 			continue
 		}
@@ -186,7 +186,7 @@ func tryMigrate(old, new string) {
 		params.Domain = old // old database name was domain
 
 		// save it
-		data, err := json.Marshal(params)
+		data, err := jsoniter.Marshal(params)
 		if err != nil {
 			log.Debug().Err(err).Msg("Marshal error")
 			continue

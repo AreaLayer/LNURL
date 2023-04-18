@@ -10,7 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -51,7 +51,9 @@ type CommandoParams struct {
 }
 
 func (l CommandoParams) getCert() string { return "" }
-func (l CommandoParams) isTor() bool     { return strings.Index(l.Host, ".onion") != -1 }
+func (l CommandoParams) isTor() bool {
+	return strings.Contains(l.Host, ".onion")
+}
 
 type SparkoParams struct {
 	Cert string
@@ -60,7 +62,9 @@ type SparkoParams struct {
 }
 
 func (l SparkoParams) getCert() string { return l.Cert }
-func (l SparkoParams) isTor() bool     { return strings.Index(l.Host, ".onion") != -1 }
+func (l SparkoParams) isTor() bool {
+	return strings.Contains(l.Host, ".onion")
+}
 
 type LNDParams struct {
 	Cert     string
@@ -69,7 +73,9 @@ type LNDParams struct {
 }
 
 func (l LNDParams) getCert() string { return l.Cert }
-func (l LNDParams) isTor() bool     { return strings.Index(l.Host, ".onion") != -1 }
+func (l LNDParams) isTor() bool {
+	return strings.Contains(l.Host, ".onion")
+}
 
 type LNBitsParams struct {
 	Cert string
@@ -78,7 +84,9 @@ type LNBitsParams struct {
 }
 
 func (l LNBitsParams) getCert() string { return l.Cert }
-func (l LNBitsParams) isTor() bool     { return strings.Index(l.Host, ".onion") != -1 }
+func (l LNBitsParams) isTor() bool {
+	return strings.Contains(l.Host, ".onion")
+}
 
 type LNPayParams struct {
 	PublicAccessKey  string
@@ -95,7 +103,9 @@ type EclairParams struct {
 }
 
 func (l EclairParams) getCert() string { return l.Cert }
-func (l EclairParams) isTor() bool     { return strings.Index(l.Host, ".onion") != -1 }
+func (l EclairParams) isTor() bool {
+	return strings.Contains(l.Host, ".onion")
+}
 
 type StrikeParams struct {
 	Key      string
@@ -203,7 +213,7 @@ func MakeInvoice(params LNParams) (bolt11 string, err error) {
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode >= 300 {
-			body, _ := ioutil.ReadAll(resp.Body)
+			body, _ := io.ReadAll(resp.Body)
 			text := string(body)
 			if len(text) > 300 {
 				text = text[:300]
@@ -211,7 +221,7 @@ func MakeInvoice(params LNParams) (bolt11 string, err error) {
 			return "", fmt.Errorf("call to lnd failed (%d): %s", resp.StatusCode, text)
 		}
 
-		b, err := ioutil.ReadAll(resp.Body)
+		b, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return "", err
 		}
@@ -251,7 +261,7 @@ func MakeInvoice(params LNParams) (bolt11 string, err error) {
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode >= 300 {
-			body, _ := ioutil.ReadAll(resp.Body)
+			body, _ := io.ReadAll(resp.Body)
 			text := string(body)
 			if len(text) > 300 {
 				text = text[:300]
@@ -260,7 +270,7 @@ func MakeInvoice(params LNParams) (bolt11 string, err error) {
 		}
 
 		defer resp.Body.Close()
-		b, err := ioutil.ReadAll(resp.Body)
+		b, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return "", err
 		}
@@ -336,7 +346,7 @@ func MakeInvoice(params LNParams) (bolt11 string, err error) {
 		}
 		defer res.Body.Close()
 
-		body, err := ioutil.ReadAll(res.Body)
+		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			return "", err
 		}
@@ -360,7 +370,7 @@ func MakeInvoice(params LNParams) (bolt11 string, err error) {
 		}
 		defer res.Body.Close()
 
-		body, err = ioutil.ReadAll(res.Body)
+		body, err = io.ReadAll(res.Body)
 		if err != nil {
 			return "", err
 		}
@@ -406,12 +416,12 @@ func MakeInvoice(params LNParams) (bolt11 string, err error) {
 			} else if resErr.Type == gjson.String {
 				return "", errors.New(resErr.String())
 			}
-			return "", fmt.Errorf("Unknown commando error: '%v'", resErr)
+			return "", fmt.Errorf("unknown commando error: '%v'", resErr)
 		}
 
 		invoice := gjson.Get(body, "result.bolt11")
 		if invoice.Type != gjson.String {
-			return "", fmt.Errorf("No bolt11 result found in invoice response, got %v", body)
+			return "", fmt.Errorf("no bolt11 result found in invoice response, got %v", body)
 		}
 
 		return invoice.String(), nil
