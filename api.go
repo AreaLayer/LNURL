@@ -1,13 +1,13 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 
 	"github.com/gorilla/mux"
+	jsoniter "github.com/json-iterator/go"
 )
 
 type Response struct {
@@ -46,7 +46,7 @@ func ClaimAddress(w http.ResponseWriter, r *http.Request) {
 	// TODO: middleware for responses that adds this header
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response)
+	jsoniter.NewEncoder(w).Encode(response)
 }
 
 func GetUser(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +69,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	jsoniter.NewEncoder(w).Encode(response)
 }
 
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +103,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(response)
+	jsoniter.NewEncoder(w).Encode(response)
 }
 
 func DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -122,7 +122,7 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(response)
+	jsoniter.NewEncoder(w).Encode(response)
 }
 
 // authentication middleware
@@ -174,15 +174,15 @@ func authenticate(next http.Handler) http.Handler {
 
 // helpers
 func sendError(w http.ResponseWriter, code int, msg string, args ...interface{}) {
-	b, _ := json.Marshal(Response{false, fmt.Sprintf(msg, args...), nil})
+	b, _ := jsoniter.Marshal(Response{false, fmt.Sprintf(msg, args...), nil})
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 	w.Write(b)
 }
 
 func parseParams(r *http.Request) *Params {
-	reqBody, _ := ioutil.ReadAll(r.Body)
+	reqBody, _ := io.ReadAll(r.Body)
 	var params Params
-	json.Unmarshal(reqBody, &params)
+	jsoniter.Unmarshal(reqBody, &params)
 	return &params
 }
