@@ -26,6 +26,7 @@ type Settings struct {
 	Port        string `envconfig:"PORT" required:"true"`
 	Domain      string `envconfig:"DOMAIN" required:"true"`
 	DBDirectory string `envconfig:"DB_DIR" required:"false" default:""`
+	Relays      string `envconfig:"RELAYS" required:"false" default:""`
 	// GlobalUsers means that user@ part is globally unique across all domains
 	// WARNING: if you toggle this existing users won't work anymore for safety reasons!
 	GlobalUsers        bool   `envconfig:"GLOBAL_USERS" default:"false"`
@@ -51,6 +52,9 @@ var (
 	log    = zerolog.New(os.Stderr).Output(zerolog.ConsoleWriter{Out: os.Stderr})
 )
 
+// array of additional relays
+var Relays []string
+
 //go:embed index.html
 var indexHTML string
 
@@ -66,6 +70,19 @@ func main() {
 	err := envconfig.Process("", &s)
 	if err != nil {
 		log.Fatal().Err(err).Msg("couldn't process envconfig.")
+	}
+
+	// parse our relays
+	Relays = strings.Split(s.Relays, ",")
+	// Check if relays are not specified and add our bootstrap relays
+	if len(Relays) == 1 && Relays[0] == "" {
+		Relays = []string{
+			"wss://relay.damus.io",         // Main Damus Relay
+			"wss://nostr.mutinywallet.com", // Special broadcast relay
+			"wss://relay.nostrgraph.net",   // Special broadcast relay
+			"wss://nos.lol",                // Large relay
+			"wss://relay.snort.social",     // Large relay for snort Users
+		}
 	}
 
 	// increase default makeinvoice client timeout because people are using tor

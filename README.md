@@ -23,6 +23,10 @@ New parameters in this fork:
 
 > (`LND_PRIVATE_ONLY`) should only be activated if satdress is used for a single user that relies on private LND channels only. 
 
+> (`DB_DIR`) Specify directory to create or access database
+
+> (`RELAYS`) Specify comma separate list of relays to push zap notes to, in addition to the zapped user relays.
+
 
 
 ```
