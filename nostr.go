@@ -197,7 +197,7 @@ func GetNostrProfileMetaData(npub string) (nostr.ProfileMetadata, error) {
 func publishNostrEvent(ev nostr.Event, relays []string) {
 
 	// more relays
-	relays = append(relays, ourRelays...)
+	relays = append(relays, Relays...)
 	// remove trailing /
 	relays = cleanUrls(relays)
 	// unique relays

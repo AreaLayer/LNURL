@@ -25,7 +25,7 @@ New parameters in this fork:
 
 > (`DB_DIR`) Specify directory to create or access database
 
-> (`OUR_RELAYS`) Specify comma separate list of relays to push zap notes to, in addition to the zapped user relays.
+> (`RELAYS`) Specify comma separate list of relays to push zap notes to, in addition to the zapped user relays.
 
 
 
