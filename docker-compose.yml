@@ -1,22 +1,21 @@
 version: "3.7"
 
 services: 
- satdress:
+ nostdress:
     build: . 
-    container_name: satdress
+    container_name: nostdress
     environment:
       - PORT=17422
-      - DOMAIN=satdress.com
-      - SECRET=askdbasjdhvakjvsdjasd
-      - SITE_OWNER_URL=https://t.me/fiatjaf
-      - SITE_OWNER_NAME=@fiatjaf
-      - SITE_NAME=Satdress
+      - DOMAIN=example.com
+      - DB_DIR=/data
+      - SECRET=CHANGE_ME_NOW
+      - SITE_OWNER_URL=https://example.com
+      - SITE_OWNER_NAME=@me
+      - SITE_NAME=Example.com
+      - NOSTR_PRIVATE_KEY=<nsec....>
+      - GET_NOSTR_PROFILE=false
+      - RELAYS="wss://nostr.wine,wss://nostr.mutinywallet.com,wss://relay.nostrgraph.net,wss://blastr.f7z.xyz,wss://relay.damus.io/,wss://relay.utxo.one,wss://relay.nostr.ch,wss://eden.nostr.land,wss://nostr.btcmp.com,wss://nostr.relayer.se,wss://relay.current.fyi,wss://nos.lol,wss://nostr.mom,wss://relay.nostr.info,wss://nostr.zebedee.cloud,wss://nostr-pub.wellorder.net,wss://relay.snort.social/,wss://nostr.oxtr.dev/,wss://nostr.fmt.wiz.biz/,wss://brb.io"
     ports:
       - 17422:17422
     volumes:
-      - satdress-data:/satdress.com
-
-volumes:
-  satdress-data:
-    name: satdress-data
-
+      - ./data:/data
