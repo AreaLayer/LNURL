@@ -275,7 +275,8 @@ func serveLNURLpSecond(w http.ResponseWriter, params *Params, username string, a
 	var note = ""
 	// nip57 - we need to store the newly created invoice in the zap receipt
 	if zapEvent.Sig != "" {
-		nip57Receipt = CreateNostrReceipt(zapEvent, invoice)
+		// TODO: Handle the err
+		nip57Receipt, err = CreateNostrReceipt(zapEvent, invoice)
 		sender = "@" + EncodeBench32Public(zapEvent.PubKey)
 		if zapEvent.Tags.GetFirst([]string{"e"}) != nil {
 			note = "@" + EncodeBench32Note(zapEvent.Tags.GetFirst([]string{"e"}).Value())
