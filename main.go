@@ -26,7 +26,7 @@ type Settings struct {
 	Port        string `envconfig:"PORT" required:"true"`
 	Domain      string `envconfig:"DOMAIN" required:"true"`
 	DBDirectory string `envconfig:"DB_DIR" required:"false" default:""`
-	Relayes     string `envconfig:"RELAYS" required:"false" default:""`
+	Relays      string `envconfig:"RELAYS" required:"false" default:""`
 	// GlobalUsers means that user@ part is globally unique across all domains
 	// WARNING: if you toggle this existing users won't work anymore for safety reasons!
 	GlobalUsers        bool   `envconfig:"GLOBAL_USERS" default:"false"`
@@ -73,7 +73,7 @@ func main() {
 	}
 
 	// parse our relays
-	Relays = strings.Split(s.Relayes, ",")
+	Relays = strings.Split(s.Relays, ",")
 	// Check if relays are not specified and add our bootstrap relays
 	if len(Relays) == 1 && Relays[0] == "" {
 		Relays = []string{
