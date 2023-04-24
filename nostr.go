@@ -235,13 +235,15 @@ func publishNostrEvent(ev nostr.Event, relays []string) {
 
 func ExtractNostrRelays(zapEvent nostr.Event) []string {
 	relaysTag := zapEvent.Tags.GetFirst([]string{"relays"})
+	log.Printf("Zap relaysTag: %s", relaysTag)
 
 	if relaysTag == nil || len(*relaysTag) == 0 {
 		return []string{}
 	}
 
-	relaysStr := strings.TrimPrefix((*relaysTag)[0], "relays")
-	relays := strings.Split(strings.TrimSpace(relaysStr), " ")
+	// Skip the first element, which is the tag name
+	relays := (*relaysTag)[1:]
+	log.Printf("Zap relays: %v", relays)
 
 	return relays
 }
@@ -284,7 +286,7 @@ func uniqueSlice(slice []string) []string {
 	keys := make(map[string]bool)
 	list := make([]string, 0, len(slice))
 	for _, entry := range slice {
-		if _, exists := keys[entry]; !exists {
+		if _, exists := keys[entry]; !exists && entry != "" {
 			keys[entry] = true
 			list = append(list, entry)
 		}
