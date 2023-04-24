@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/nbd-wtf/go-nostr"
@@ -195,81 +196,95 @@ func GetNostrProfileMetaData(npub string) (nostr.ProfileMetadata, error) {
 }
 
 func publishNostrEvent(ev nostr.Event, relays []string) {
-
-	// more relays
-	relays = append(relays, Relays...)
-	// remove trailing /
-	relays = cleanUrls(relays)
-	// unique relays
-	relays = uniqueSlice(relays)
+	// Add more relays, remove trailing slashes, and ensure unique relays
+	relays = uniqueSlice(cleanUrls(append(relays, Relays...)))
 
 	ev.Sign(s.NostrPrivateKey)
 
-	//log.Printf("publishing nostr event %s", ev.ID)
-	// publish the event to relays
+	var wg sync.WaitGroup
+	wg.Add(len(relays))
+
+	// Publish the event to relays
 	for _, url := range relays {
 		go func(url string) {
+			defer wg.Done()
+
 			ctx := context.WithValue(context.Background(), "url", url)
-			relay, e := nostr.RelayConnect(ctx, url)
-			if e != nil {
-				log.Error().Str(e.Error(), e.Error())
+			relay, err := nostr.RelayConnect(ctx, url)
+			if err != nil {
+				log.Printf("Error connecting to relay %s: %v", url, err)
 				return
 			}
-			time.Sleep(3 * time.Second)
-
-			status, _ := relay.Publish(ctx, ev)
-			log.Info().Str("[NOSTR] published to %s:", status.String())
+			defer relay.Close()
 
 			time.Sleep(3 * time.Second)
-			relay.Close()
+
+			status, err := relay.Publish(ctx, ev)
+			if err != nil {
+				log.Printf("Error publishing to relay %s: %v", url, err)
+			} else {
+				log.Printf("[NOSTR] published to %s: %s", url, status)
+			}
+
+			time.Sleep(3 * time.Second)
 		}(url)
-
 	}
+
+	wg.Wait()
 }
 
 func ExtractNostrRelays(zapEvent nostr.Event) []string {
-	nip57ReceiptRelaysTags := zapEvent.Tags.GetFirst([]string{"relays"})
-	if len(fmt.Sprintf("%s", nip57ReceiptRelaysTags)) > 0 {
-		nip57ReceiptRelays = strings.Split(fmt.Sprintf("%s", nip57ReceiptRelaysTags), " ")
-		// this dirty method returns slice [ "[relays", "wss...", "wss...", "wss...]" ] – we need to clean it up
-		if len(nip57ReceiptRelays) > 1 {
-			// remove the first entry
-			nip57ReceiptRelays = nip57ReceiptRelays[1:]
-			// clean up the last entry
-			len_last_entry := len(nip57ReceiptRelays[len(nip57ReceiptRelays)-1])
-			nip57ReceiptRelays[len(nip57ReceiptRelays)-1] = nip57ReceiptRelays[len(nip57ReceiptRelays)-1][:len_last_entry-1]
-		}
+	relaysTag := zapEvent.Tags.GetFirst([]string{"relays"})
+
+	if relaysTag == nil || len(*relaysTag) == 0 {
+		return []string{}
 	}
-	return nip57ReceiptRelays
+
+	relaysStr := strings.TrimPrefix((*relaysTag)[0], "relays")
+	relays := strings.Split(strings.TrimSpace(relaysStr), " ")
+
+	return relays
 }
 
-func CreateNostrReceipt(zapEvent nostr.Event, invoice string) nostr.Event {
-	pk := nostrPrivkeyHex
-	pub, _ := nostr.GetPublicKey(pk)
-	zapEventSerialized, _ := json.Marshal(zapEvent)
-	zapEventSerializedStr = fmt.Sprintf("%s", zapEventSerialized)
-	nip57Receipt = nostr.Event{
+func CreateNostrReceipt(zapEvent nostr.Event, invoice string) (nostr.Event, error) {
+	pub, err := nostr.GetPublicKey(nostrPrivkeyHex)
+	if err != nil {
+		return nostr.Event{}, err
+	}
+
+	zapEventSerialized, err := json.Marshal(zapEvent)
+	if err != nil {
+		return nostr.Event{}, err
+	}
+
+	nip57Receipt := nostr.Event{
 		PubKey:    pub,
 		CreatedAt: time.Now(),
 		Kind:      9735,
 		Tags: nostr.Tags{
 			*zapEvent.Tags.GetFirst([]string{"p"}),
 			[]string{"bolt11", invoice},
-			[]string{"description", zapEventSerializedStr},
+			[]string{"description", string(zapEventSerialized)},
 		},
 	}
-	if zapEvent.Tags.GetFirst([]string{"e"}) != nil {
-		nip57Receipt.Tags = nip57Receipt.Tags.AppendUnique(*zapEvent.Tags.GetFirst([]string{"e"}))
+
+	if eTag := zapEvent.Tags.GetFirst([]string{"e"}); eTag != nil {
+		nip57Receipt.Tags = nip57Receipt.Tags.AppendUnique(*eTag)
 	}
-	nip57Receipt.Sign(pk)
-	return nip57Receipt
+
+	err = nip57Receipt.Sign(nostrPrivkeyHex)
+	if err != nil {
+		return nostr.Event{}, err
+	}
+
+	return nip57Receipt, nil
 }
 
 func uniqueSlice(slice []string) []string {
 	keys := make(map[string]bool)
-	list := []string{}
+	list := make([]string, 0, len(slice))
 	for _, entry := range slice {
-		if _, value := keys[entry]; !value {
+		if _, exists := keys[entry]; !exists {
 			keys[entry] = true
 			list = append(list, entry)
 		}
@@ -278,7 +293,7 @@ func uniqueSlice(slice []string) []string {
 }
 
 func cleanUrls(slice []string) []string {
-	list := []string{}
+	list := make([]string, 0, len(slice))
 	for _, entry := range slice {
 		if strings.HasSuffix(entry, "/") {
 			entry = entry[:len(entry)-1]
