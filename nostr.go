@@ -32,6 +32,18 @@ var nip57Receipt nostr.Event
 var zapEventSerializedStr string
 var nip57ReceiptRelays []string
 
+// Relay connections
+type RelayConnection struct {
+	URL       string
+	relay     *nostr.Relay
+	lastUsed  time.Time
+	closeChan chan bool
+}
+
+var relayConnections = make(map[string]*RelayConnection)
+var relayConnectionsMutex sync.Mutex
+var connectionTimeout = 30 * time.Minute
+
 func Nip57DescriptionHash(zapEventSerialized string) string {
 	hash := sha256.Sum256([]byte(zapEventSerialized))
 	hashString := hex.EncodeToString(hash[:])
@@ -195,6 +207,56 @@ func GetNostrProfileMetaData(npub string) (nostr.ProfileMetadata, error) {
 
 }
 
+func getRelayConnection(url string) (*nostr.Relay, error) {
+	relayConnectionsMutex.Lock()
+	defer relayConnectionsMutex.Unlock()
+
+	if relayConn, ok := relayConnections[url]; ok {
+		relayConn.lastUsed = time.Now()
+		return relayConn.relay, nil
+	}
+
+	ctx := context.WithValue(context.Background(), "url", url)
+	relay, err := nostr.RelayConnect(ctx, url)
+	if err != nil {
+		return nil, err
+	}
+
+	relayConn := &RelayConnection{
+		URL:       url,
+		relay:     relay,
+		lastUsed:  time.Now(),
+		closeChan: make(chan bool),
+	}
+	relayConnections[url] = relayConn
+
+	go func() {
+		select {
+		case <-time.After(connectionTimeout):
+			relayConnectionsMutex.Lock()
+			if time.Since(relayConn.lastUsed) >= connectionTimeout {
+				relay.Close()
+				delete(relayConnections, url)
+			}
+			relayConnectionsMutex.Unlock()
+		case <-relayConn.closeChan:
+		}
+	}()
+
+	return relay, nil
+}
+
+func closeRelayConnection(url string) {
+	relayConnectionsMutex.Lock()
+	defer relayConnectionsMutex.Unlock()
+
+	if relayConn, ok := relayConnections[url]; ok {
+		relayConn.closeChan <- true
+		relayConn.relay.Close()
+		delete(relayConnections, url)
+	}
+}
+
 func publishNostrEvent(ev nostr.Event, relays []string) {
 	// Add more relays, remove trailing slashes, and ensure unique relays
 	relays = uniqueSlice(cleanUrls(append(relays, Relays...)))
@@ -209,16 +271,15 @@ func publishNostrEvent(ev nostr.Event, relays []string) {
 		go func(url string) {
 			defer wg.Done()
 
-			ctx := context.WithValue(context.Background(), "url", url)
-			relay, err := nostr.RelayConnect(ctx, url)
+			relay, err := getRelayConnection(url)
 			if err != nil {
 				log.Printf("Error connecting to relay %s: %v", url, err)
 				return
 			}
-			defer relay.Close()
 
 			time.Sleep(3 * time.Second)
 
+			ctx := context.WithValue(context.Background(), "url", url)
 			status, err := relay.Publish(ctx, ev)
 			if err != nil {
 				log.Printf("Error publishing to relay %s: %v", url, err)
