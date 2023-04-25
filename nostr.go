@@ -5,7 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -229,6 +231,16 @@ func isRelayIgnored(url string) bool {
 	return false
 }
 
+func isBrokenPipeError(err error) bool {
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		if strings.Contains(netErr.Error(), "write: broken pipe") {
+			return true
+		}
+	}
+	return false
+}
+
 func getRelayConnection(url string) (*nostr.Relay, error) {
 	if isRelayIgnored(url) {
 		return nil, fmt.Errorf("relay %s is being ignored", url)
@@ -298,24 +310,36 @@ func publishNostrEvent(ev nostr.Event, relays []string) {
 		go func(url string) {
 			defer wg.Done()
 
-			relay, err := getRelayConnection(url)
-			if err != nil {
-				log.Printf("Error connecting to relay %s: %v", url, err)
-				return
+			var err error
+			var relay *nostr.Relay
+			var status nostr.Status
+			maxRetries := 3
+
+			for i := 0; i < maxRetries; i++ {
+				relay, err = getRelayConnection(url)
+				if err != nil {
+					log.Printf("Error connecting to relay %s: %v", url, err)
+					return
+				}
+
+				time.Sleep(3 * time.Second)
+
+				ctx := context.WithValue(context.Background(), "url", url)
+				status, err = relay.Publish(ctx, ev)
+				if err != nil {
+					log.Printf("Error publishing to relay %s: %v", url, err)
+
+					if isBrokenPipeError(err) {
+						closeRelayConnection(url) // Close the broken connection
+						continue                  // Retry connection and publish
+					}
+				} else {
+					log.Printf("[NOSTR] published to %s: %s", url, status.String()) // Convert the nostr.Status value to a string
+					break
+				}
+
+				time.Sleep(3 * time.Second)
 			}
-
-			time.Sleep(3 * time.Second)
-
-			ctx := context.WithValue(context.Background(), "url", url)
-			status, err := relay.Publish(ctx, ev)
-			if err != nil {
-				ignoreRelay(url)
-				log.Printf("Error publishing to relay %s: %v", url, err)
-			} else {
-				log.Printf("[NOSTR] published to %s: %s", url, status)
-			}
-
-			time.Sleep(3 * time.Second)
 		}(url)
 	}
 
