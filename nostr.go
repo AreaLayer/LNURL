@@ -43,6 +43,9 @@ type RelayConnection struct {
 var relayConnections = make(map[string]*RelayConnection)
 var relayConnectionsMutex sync.Mutex
 var connectionTimeout = 30 * time.Minute
+var ignoreRelayDuration = 10 * time.Minute
+var ignoredRelays = make(map[string]time.Time)
+var ignoredRelaysMutex sync.Mutex
 
 func Nip57DescriptionHash(zapEventSerialized string) string {
 	hash := sha256.Sum256([]byte(zapEventSerialized))
@@ -207,7 +210,30 @@ func GetNostrProfileMetaData(npub string) (nostr.ProfileMetadata, error) {
 
 }
 
+func ignoreRelay(url string) {
+	ignoredRelaysMutex.Lock()
+	defer ignoredRelaysMutex.Unlock()
+	ignoredRelays[url] = time.Now()
+}
+
+func isRelayIgnored(url string) bool {
+	ignoredRelaysMutex.Lock()
+	defer ignoredRelaysMutex.Unlock()
+
+	if t, ok := ignoredRelays[url]; ok {
+		if time.Since(t) < ignoreRelayDuration {
+			return true
+		}
+		delete(ignoredRelays, url)
+	}
+	return false
+}
+
 func getRelayConnection(url string) (*nostr.Relay, error) {
+	if isRelayIgnored(url) {
+		return nil, fmt.Errorf("relay %s is being ignored", url)
+	}
+
 	relayConnectionsMutex.Lock()
 	defer relayConnectionsMutex.Unlock()
 
@@ -219,6 +245,7 @@ func getRelayConnection(url string) (*nostr.Relay, error) {
 	ctx := context.WithValue(context.Background(), "url", url)
 	relay, err := nostr.RelayConnect(ctx, url)
 	if err != nil {
+		ignoreRelay(url)
 		return nil, err
 	}
 
