@@ -43,7 +43,7 @@ type RelayConnection struct {
 var relayConnections = make(map[string]*RelayConnection)
 var relayConnectionsMutex sync.Mutex
 var connectionTimeout = 30 * time.Minute
-var ignoreRelayDuration = 10 * time.Minute
+var ignoreRelayDuration = 5 * time.Minute
 var ignoredRelays = make(map[string]time.Time)
 var ignoredRelaysMutex sync.Mutex
 
@@ -309,6 +309,7 @@ func publishNostrEvent(ev nostr.Event, relays []string) {
 			ctx := context.WithValue(context.Background(), "url", url)
 			status, err := relay.Publish(ctx, ev)
 			if err != nil {
+				ignoreRelay(url)
 				log.Printf("Error publishing to relay %s: %v", url, err)
 			} else {
 				log.Printf("[NOSTR] published to %s: %s", url, status)
