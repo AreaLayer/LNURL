@@ -19,6 +19,8 @@ New parameters in this fork:
 
 > (`ALLOW_REGISTRATION`) Activate/Deactivate Registration for users of the website (Default true)
 
+> (`ALLOW_API`) Activate/Deactivate Api access for classic and easy API (Default true)
+
 > (`NOTIFY_NOSTR_USERS`) Allow setting to send DM notifications to users with npub (user can opt in/out if activated)
 
 > (`LND_PRIVATE_ONLY`) should only be activated if satdress is used for a single user that relies on private LND channels only. 
