@@ -214,10 +214,10 @@
               </label>
             </div>
           </div>
-          <button class="submit" v-if="allowregistration == 'true'" >Submit</button>
+          <button class="submit" v-if="allowregistration == 'true' || !isNew " >Submit</button>
        
       </div>
-      <div class="field">  <label style="float: left"  v-if="allowregistration == 'false'">
+      <div class="field">  <label style="float: left"  v-if="allowregistration == 'false' && isNew">
         Registration has been deactivated by adminsitrator for this domain</label></div>
     
      </form>

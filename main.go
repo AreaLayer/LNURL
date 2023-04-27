@@ -42,6 +42,7 @@ type Settings struct {
 	TorProxyURL        string `envconfig:"TOR_PROXY_URL"`
 	NotifyNostrUsers   bool   `envconfig:"NOTIFY_NOSTR_USERS" required:"false" default:"true"`
 	AllowRegistration  bool   `envconfig:"ALLOW_REGISTRATION" required:"false" default:"true"`
+	AllowAPI           bool   `envconfig:"ALLOW_API" required:"false" default:"true"`
 	LNDprivateOnly     bool   `envconfig:"LND_PRIVATE_ONLY" required:"false" default:"false"`
 }
 
@@ -212,64 +213,69 @@ func main() {
 	//            { new StringContent(lnbitsapikey), "key" },
 	//            { new StringContent(pin), "pin" },
 
-	router.Path("/api/easy/").HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
+	if s.AllowAPI {
+		router.Path("/api/easy/").HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
 
-			newname := r.FormValue("name")
-			currentName := r.FormValue("currentname")
-			domain := r.FormValue("domain")
-			currentPin := r.FormValue("pin")
+				newname := r.FormValue("name")
+				currentName := r.FormValue("currentname")
+				domain := r.FormValue("domain")
+				currentPin := r.FormValue("pin")
 
-			params := Params{
-				Kind:   r.FormValue("kind"),
-				Host:   r.FormValue("host"),
-				Key:    r.FormValue("key"),
-				Pak:    r.FormValue("pak"),
-				Waki:   r.FormValue("waki"),
-				NodeId: r.FormValue("nodeid"),
-				Rune:   r.FormValue("rune"),
-				Npub:   r.FormValue("npub"),
-			}
+				params := Params{
+					Kind:   r.FormValue("kind"),
+					Host:   r.FormValue("host"),
+					Key:    r.FormValue("key"),
+					Pak:    r.FormValue("pak"),
+					Waki:   r.FormValue("waki"),
+					NodeId: r.FormValue("nodeid"),
+					Rune:   r.FormValue("rune"),
+					Npub:   r.FormValue("npub"),
+				}
 
-			pin, _, err := SaveName(newname, domain, &params, currentPin, true, currentName)
-			if err != nil {
-				w.WriteHeader(500)
-				fmt.Fprint(w, err.Error())
-				return
-			}
-			params.Pin = pin
+				pin, _, err := SaveName(newname, domain, &params, currentPin, true, currentName)
+				if err != nil {
+					w.WriteHeader(500)
+					fmt.Fprint(w, err.Error())
+					return
+				}
+				params.Pin = pin
 
-			response := ResponseEasy{
-				Ok:  true,
-				Pin: pin,
-			}
+				response := ResponseEasy{
+					Ok:  true,
+					Pin: pin,
+				}
 
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusCreated)
-			json.NewEncoder(w).Encode(response)
-		},
-	)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusCreated)
+				json.NewEncoder(w).Encode(response)
+			},
+		)
 
-	api := router.PathPrefix("/api/v1").Subrouter()
-	api.Use(authenticate)
+		api := router.PathPrefix("/api/v1").Subrouter()
+		api.Use(authenticate)
 
-	// unauthenticated
-	api.HandleFunc("/claim", ClaimAddress).Methods("POST")
+		// unauthenticated
+		if s.AllowRegistration {
+			api.HandleFunc("/claim", ClaimAddress).Methods("POST")
+		}
 
-	// authenticated routes; X-Pin in header or in json request body
-	api.HandleFunc("/users/{name}@{domain}", GetUser).Methods("GET")
-	api.HandleFunc("/users/{name}@{domain}", UpdateUser).Methods("PUT")
-	api.HandleFunc("/users/{name}@{domain}", DeleteUser).Methods("DELETE")
+		// authenticated routes; X-Pin in header or in json request body
+		api.HandleFunc("/users/{name}@{domain}", GetUser).Methods("GET")
+		api.HandleFunc("/users/{name}@{domain}", UpdateUser).Methods("PUT")
+		api.HandleFunc("/users/{name}@{domain}", DeleteUser).Methods("DELETE")
 
-	srv := &http.Server{
-		Handler:      cors.Default().Handler(router),
-		Addr:         s.Host + ":" + s.Port,
-		WriteTimeout: 15 * time.Second,
-		ReadTimeout:  15 * time.Second,
+		srv := &http.Server{
+			Handler:      cors.Default().Handler(router),
+			Addr:         s.Host + ":" + s.Port,
+			WriteTimeout: 15 * time.Second,
+			ReadTimeout:  15 * time.Second,
+		}
+		log.Debug().Str("addr", srv.Addr).Msg("listening")
+
+		srv.ListenAndServe()
+
 	}
-	log.Debug().Str("addr", srv.Addr).Msg("listening")
-
-	srv.ListenAndServe()
 }
 
 func getDomains(s string) []string {
