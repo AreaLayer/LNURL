@@ -146,56 +146,68 @@ func handleNip05(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func GetNostrProfileMetaData(npub string) (nostr.ProfileMetadata, error) {
+func GetNostrProfileMetaData(npub string, index int) (nostr.ProfileMetadata, error) {
 	ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
 
 	var metadata *nostr.ProfileMetadata
 	// connect to first relay, todo, check on all/for errors
-	rel := Relays[0]
-	log.Printf("Get Image from: %s . If you receive an error use another relay on first position in RELAYS option", rel)
-	url := rel
-	relay, err := nostr.RelayConnect(ctx, url)
-	if err != nil {
-		log.Printf("Could not get Image")
+
+	if index < len(Relays) {
+		rel := Relays[index]
+		log.Printf("Get Image from: %s", rel)
+		url := rel
+		relay, err := nostr.RelayConnect(ctx, url)
+		if err != nil {
+			log.Printf("Could not get Connect, trying next relay")
+			return GetNostrProfileMetaData(npub, index+1)
+			//return *metadata, err
+		}
+
+		// create filters
+		var filters nostr.Filters
+		if _, v, err := nip19.Decode(npub); err == nil {
+			t := make(map[string][]string)
+			t["p"] = []string{v.(string)}
+			filters = []nostr.Filter{{
+				Authors: []string{v.(string)},
+				Kinds:   []int{0},
+				// limit = 3, get the three most recent notes
+				Limit: 1,
+			}}
+		} else {
+			log.Printf("Could not find Profile, trying next relay")
+			return GetNostrProfileMetaData(npub, index+1)
+			//return *metadata, err
+
+		}
+		sub, err := relay.Subscribe(ctx, filters)
+		evs := make([]nostr.Event, 0)
+
+		go func() {
+			<-sub.EndOfStoredEvents
+
+		}()
+
+		for ev := range sub.Events {
+
+			evs = append(evs, *ev)
+		}
+		relay.Close()
+
+		if len(evs) > 0 {
+			metadata, err = nostr.ParseMetadata(evs[0])
+			log.Printf("Success getting Nostr Profile")
+		} else {
+			err = fmt.Errorf("no profile found for npub %s on relay %s", npub, url)
+			log.Printf("Could not find Profile, trying next relay")
+			return GetNostrProfileMetaData(npub, index+1)
+		}
+
 		return *metadata, err
-	}
-
-	// create filters
-	var filters nostr.Filters
-	if _, v, err := nip19.Decode(npub); err == nil {
-		t := make(map[string][]string)
-		t["p"] = []string{v.(string)}
-		filters = []nostr.Filter{{
-			Authors: []string{v.(string)},
-			Kinds:   []int{0},
-			// limit = 3, get the three most recent notes
-			Limit: 1,
-		}}
 	} else {
-		return *metadata, err
+		return *metadata, fmt.Errorf("Couldn't download Profile for given relays")
 
 	}
-	sub, err := relay.Subscribe(ctx, filters)
-	evs := make([]nostr.Event, 0)
-
-	go func() {
-		<-sub.EndOfStoredEvents
-
-	}()
-
-	for ev := range sub.Events {
-
-		evs = append(evs, *ev)
-	}
-	relay.Close()
-
-	if len(evs) > 0 {
-		metadata, err = nostr.ParseMetadata(evs[0])
-	} else {
-		err = fmt.Errorf("no profile found for npub %s on relay %s", npub, url)
-	}
-	log.Printf("Success getting Nostr Profile")
-	return *metadata, err
 
 }
 

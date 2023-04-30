@@ -50,7 +50,7 @@ func SaveName(
 	domain = strings.ToLower(domain)
 
 	if params.Npub != "" && s.GetNostrProfile {
-		NostrProfile, err := GetNostrProfileMetaData(params.Npub)
+		NostrProfile, err := GetNostrProfileMetaData(params.Npub, 0)
 		if err == nil {
 			err = addImageToProfile(params, NostrProfile.Picture)
 			if err != nil {
