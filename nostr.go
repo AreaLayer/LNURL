@@ -1,11 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"image"
+	"image/gif"
+	"image/jpeg"
+	"image/png"
 	"net/http"
 	"strings"
 	"sync"
@@ -14,6 +21,7 @@ import (
 	"github.com/nbd-wtf/go-nostr"
 	"github.com/nbd-wtf/go-nostr/nip04"
 	"github.com/nbd-wtf/go-nostr/nip19"
+	"github.com/nfnt/resize"
 )
 
 type Tag []string
@@ -209,6 +217,76 @@ func GetNostrProfileMetaData(npub string, index int) (nostr.ProfileMetadata, err
 
 	}
 
+}
+
+// addImageToMetaData adds an image to the LNURL metadata
+func addImageToProfile(params *Params, imageurl string) (err error) {
+	// Download and resize profile picture
+	picture, err := DownloadProfilePicture(imageurl)
+	if err != nil {
+		log.Debug().Str("Downloading profile picture", err.Error()).Msg("Error")
+		return err
+	}
+
+	// Determine image format
+	contentType := http.DetectContentType(picture)
+	var ext string
+	if contentType == "image/jpeg" {
+		ext = "jpeg"
+	} else if contentType == "image/png" {
+		ext = "png"
+	} else if contentType == "image/gif" {
+		ext = "gif"
+	} else {
+		log.Debug().Str("Detecting image format", "unknown format").Msg("Error")
+		return fmt.Errorf("Detecting image format: unknown format")
+	}
+
+	// Set image metadata in LNURL metadata
+	params.Image.Ext = ext
+	params.Image.DataURI = "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(picture)
+	params.Image.Bytes = picture
+
+	return nil
+}
+
+func DownloadProfilePicture(url string) ([]byte, error) {
+	client := http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	res, err := client.Get(url)
+	if err != nil {
+		return nil, errors.New("failed to download image: " + err.Error())
+	}
+	defer res.Body.Close()
+
+	contentType := res.Header.Get("Content-Type")
+	if contentType != "image/jpeg" && contentType != "image/png" && contentType != "image/gif" {
+		return nil, errors.New("unsupported image format")
+	}
+
+	var img image.Image
+	switch contentType {
+	case "image/jpeg":
+		img, err = jpeg.Decode(res.Body)
+	case "image/png":
+		img, err = png.Decode(res.Body)
+	case "image/gif":
+		img, err = gif.Decode(res.Body)
+	}
+	if err != nil {
+		return nil, errors.New("failed to decode image: " + err.Error())
+	}
+
+	img = resize.Thumbnail(thumbnailWidth, thumbnailHeight, img, resize.Lanczos3)
+
+	buf := new(bytes.Buffer)
+
+	if err := jpeg.Encode(buf, img, nil); err != nil {
+		return nil, errors.New("failed to encode image: " + err.Error())
+	}
+	return buf.Bytes(), nil
 }
 
 func publishNostrEvent(ev nostr.Event, relays []string) {
