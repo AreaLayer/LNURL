@@ -150,10 +150,13 @@ func GetNostrProfileMetaData(npub string) (nostr.ProfileMetadata, error) {
 	ctx, _ := context.WithTimeout(context.Background(), 3*time.Second)
 
 	var metadata *nostr.ProfileMetadata
-	// connect to any relay
-	url := "wss://relay.damus.io"
+	// connect to first relay, todo, check on all/for errors
+	rel := Relays[0]
+	log.Printf("Get Image from: %s . If you receive an error use another relay on first position in RELAYS option", rel)
+	url := rel
 	relay, err := nostr.RelayConnect(ctx, url)
 	if err != nil {
+		log.Printf("Could not get Image")
 		return *metadata, err
 	}
 
@@ -191,6 +194,7 @@ func GetNostrProfileMetaData(npub string) (nostr.ProfileMetadata, error) {
 	} else {
 		err = fmt.Errorf("no profile found for npub %s on relay %s", npub, url)
 	}
+	log.Printf("Success getting Nostr Profile")
 	return *metadata, err
 
 }

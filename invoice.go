@@ -29,25 +29,26 @@ func metaData(params *Params) lnurl.Metadata {
 		LightningAddress: fmt.Sprintf("%s@%s", params.Name, params.Domain),
 	}
 
-	/* if params.Npub != "" && s.GetNostrProfile {
-		NostrProfile, err := GetNostrProfileMetaData(params.Npub)
-		if err == nil {
-			addImageToMetaData(&metadata, NostrProfile.Picture)
+	if params.Npub != "" && s.GetNostrProfile {
+		if params.Image.DataURI != "" {
+			metadata.Image.Bytes = params.Image.Bytes
+			metadata.Image.Ext = params.Image.Ext
+			metadata.Image.DataURI = params.Image.DataURI
 		}
 
-	} */
+	}
 
 	return metadata
 
 }
 
 // addImageToMetaData adds an image to the LNURL metadata
-func addImageToMetaData(metadata *lnurl.Metadata, imageurl string) {
+func addImageToProfile(params *Params, imageurl string) (err error) {
 	// Download and resize profile picture
 	picture, err := DownloadProfilePicture(imageurl)
 	if err != nil {
 		log.Debug().Str("Downloading profile picture", err.Error()).Msg("Error")
-		return
+		return err
 	}
 
 	// Determine image format
@@ -59,13 +60,15 @@ func addImageToMetaData(metadata *lnurl.Metadata, imageurl string) {
 		ext = "png"
 	} else {
 		log.Debug().Str("Detecting image format", "unknown format").Msg("Error")
-		return
+		return fmt.Errorf("Detecting image format: unknown format")
 	}
 
 	// Set image metadata in LNURL metadata
-	metadata.Image.Ext = ext
-	metadata.Image.DataURI = "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(picture)
-	metadata.Image.Bytes = picture
+	params.Image.Ext = ext
+	params.Image.DataURI = "data:" + contentType + ";base64," + base64.StdEncoding.EncodeToString(picture)
+	params.Image.Bytes = picture
+
+	return nil
 }
 
 func DownloadProfilePicture(url string) ([]byte, error) {

@@ -31,6 +31,11 @@ type Params struct {
 	NotifyZaps       bool   `json:"notifyzaps"`
 	NotifyZapComment bool   `json:"notifycomments"`
 	NotifyNonZap     bool   `json:"notifynonzaps"`
+	Image            struct {
+		DataURI string
+		Bytes   []byte
+		Ext     string
+	}
 }
 
 func SaveName(
@@ -43,6 +48,17 @@ func SaveName(
 ) (pin string, inv string, err error) {
 	name = strings.ToLower(name)
 	domain = strings.ToLower(domain)
+
+	if params.Npub != "" && s.GetNostrProfile {
+		NostrProfile, err := GetNostrProfileMetaData(params.Npub)
+		if err == nil {
+			err = addImageToProfile(params, NostrProfile.Picture)
+			if err != nil {
+
+			}
+		}
+
+	}
 
 	key := []byte(getID(name, domain))
 
