@@ -1,4 +1,4 @@
-# Nostdress (LNURL)
+# Nostdress (LNURL) for Area Layer
 
 Federated Lightning Address Server (with NIP57 Zap support)
 
