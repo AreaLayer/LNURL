@@ -1,6 +1,6 @@
-# Nostdress (LNURL) for Area Layer
+# Nostdress (LNURL) for Area Layer ⚡ 🟣
 
-Federated Lightning Address Server (with NIP57 Zap support) on Area Layer
+Federated Lightning Address Server (with NIP57 Zap support) on Area Layer 
 
 ## How to run
 
